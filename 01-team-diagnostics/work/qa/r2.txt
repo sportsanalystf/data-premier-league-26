@@ -1,0 +1,796 @@
+
+Finding the leak
+Finding the leak
+Part 2 of 3 · Choosing a franchise fairly,
+diagnosing it, and auditing the decisions it made
+Faizan Khan
+last-modified
+Abstract
+Data Premier League 2026, preliminary round, Task 1. The task has two
+problems inside it. Problem A: which franchise should a scouting report
+be about? Problem B: for that franchise, what is wrong, what did it do
+about it, and what should it do next? I answer A with a screen every
+team goes through, using three gates fixed in advance; only one team
+passes all three. I answer B with a separate set of hypotheses and a
+decision audit that follows the franchise season by season, from its
+2023 data to the December 2023 auction to its 2024 results, and puts a
+number in runs, wins and crore on each step. Everything is in R and
+every number in the text is computed.
+1 The task, and how I approached
+it
+1.1 Situation
+1.2 Search: what is already
+known
+1.3 The obvious gap
+1.4 Representation: the problem
+map
+1.5 Hypotheses for choosing the
+team
+1.6 The key questions
+2 Problem A: choosing the team
+2.1 Why one dimension is not
+enough
+2.2 Gate 1: results against what the
+runs deserved
+2.3 Gate 2: a cause on the field that
+survives scrutiny
+2.4 Gate 3: money
+2.5 Every team on every
+dimension
+2.6 The choice
+3 The measuring tools
+3.1 Ladder 1: expected runs per
+ball
+3.2 Ladder 2: win probability, WPA and
+leverage
+3.3 Ladder 3: runs to wins to
+crore
+3.4 Ladder 4: what the auction pays
+for
+3.5 The pressure layer
+4 Problem B, part 1: what is wrong
+with RCB?
+4.1 A separate set of
+hypotheses
+4.2 H4: is it the ground?
+4.3 H1: is the shortfall
+concentrated?
+4.4 H2 and H3: deployment or
+squad?
+4.5 H5: was the money where it
+mattered?
+4.6 H6: is it pressure, or is it
+luck?
+5 Problem B, part 2: what did the
+franchise do about it?
+5.1 Step 1: what 2023 said
+(foresight)
+5.2 Step 2: what the franchise did at
+the December 2023 auction
+5.3 Step 3: how the moves turned out
+(hindsight)
+5.4 Step 4: what the market offered
+(foresight and hindsight)
+5.5 Step 5: inside 2024, did the
+season turn on the weak cell?
+5.6 What they should ideally have
+done
+6 Problem B, part 3: what next
+6.1 The options
+6.2 Recommendation 1: redeploy now,
+for free
+6.3 Recommendation 2: buy one Indian
+middle-overs spinner, on several seasons of evidence
+6.4 Recommendation 3: who to build
+around
+6.5 What not to do
+7 The decision
+7.1 Summary of verdicts
+8 Epilogue: what actually happened
+next
+9 Limitations
+References
+The short version.
+Which team. I did not pick a franchise and then look for its
+problems. Every team went through the same three gates: did it win fewer
+games than its runs deserved in both seasons; does it
+have a weakness on the field that survives a multiple-testing
+correction, a ground adjustment and a second season; and did it pay more
+for its squad than its wins were worth. Only Royal Challengers
+Bengaluru passes all three.
+What is wrong. Most of their reputation for bad bowling is
+their home ground. What is left, and what repeats in both seasons, is
+spin in the middle overs: -27.9 runs per 100 balls
+against the rest of the league, the worst cell of any team. It cost
+about 105 runs, or 1.2 wins, in 2023 and the same again in 2024.
+What they did. After 2023 the data pointed at spin. At the
+December 2023 auction RCB released both of their main spinners, spent
+₹36.2 crore of new money on pace and ₹2.0 crore on spin, and the
+middle-overs spin cell was no better in 2024 (-26.8 and then -29.0).
+Their 2024 turnaround, from 1 win in 7 to 6 in 7, came from the
+powerplay, not from the weak cell.
+What next. Buy one Indian middle-overs spinner whose rate is
+in the league’s top quarter, with a bid ceiling set from projected wins,
+and move middle overs to the bowlers who are already good at them. Don’t
+spend the big money on more pace or on “clutch”.
+1 The task, and how I
+approached it
+The brief asks for a scouting report on one franchise across two
+seasons: diagnose the problem and suggest strategies. Read closely, that
+is two problems, and they need different methods.
+Problem A: which team? A choice among ten. It needs
+a fair screen, so that the team is the output of an analysis and not an
+input to it.
+Problem B: that team’s problem. A diagnosis and a
+set of decisions. It needs its own hypotheses, its own tests and a way
+to put a value on each decision.
+I worked through both using the same six steps: describe the
+situation, search what others have
+already learned, name the obvious gap, choose a
+representation that ties the pieces together, write
+down hypotheses before testing them, and arrive at the
+key question. I borrowed this sequence from a
+problem-solving course, because it forces the order that analysis
+usually skips: you are not allowed to pick the answer first.
+[IMG]
+The six steps, as applied to this task.
+1.1 Situation
+A franchise cannot change the last two seasons. It can change three
+things: who bowls and bats when (deployment),
+who is in the squad (retention, trades and the auction)
+and what it pays (price discipline). An analysis that
+does not end in one of those three is description, not decision support.
+Amol Desai put it more simply in the mentor session: start at the
+decision, name the kind of question you are asking, and only then pick a
+model.
+[TABLE]
+1.2 Search: what is
+already known
+Starting from zero would waste what others have worked out. These are
+the sources the method leans on, and what I take from each. The mentor
+sessions shaped the questions; the published work shaped the tools.
+[TABLE]
+1.3 The obvious gap
+Part 1 showed that grounds, seasons and phases all move raw numbers a
+lot, and that most team weak spots move between seasons. The obvious gap
+is therefore not “which team was worst” (the table already says that)
+but which team under-achieved relative to its own cricket, in a
+way that repeats and that a franchise could act on. That is a
+narrower and more useful question, and it is the one Problem A
+answers.
+1.4 Representation: the
+problem map
+[IMG]
+The problem map for Task 1. Every analysis in this report measures one
+of these links.
+The map is how I hold the whole task in my head. Money (purse and
+market) buys a squad. The squad is deployed into three phases, under
+conditions set by the ground. Phases produce runs for and against. Runs
+turn into wins, through how well a team converts close games. And wins,
+set against what the squad cost, give value per crore, which feeds back
+into the next auction. A franchise can only pull the levers on the left
+(purse, market, squad, deployment). Everything on the right is an
+outcome. So a useful diagnosis has to trace an outcome on the right back
+to a lever on the left.
+Each link has a measurement attached: the hedonic price model for the
+market, runs above expected for the phases, the Pythagorean link from
+runs to wins, win probability for conversion, and WAR for value. Section
+3 builds those tools, one after another, each one feeding the next.
+1.5 Hypotheses for
+choosing the team
+Written down before the screen was run, each with what would kill
+it:
+[TABLE]
+1.6 The key
+questions
+Problem A. Which franchise lost more games than its
+cricket deserved, in both seasons, with a cause on the field that
+survives scrutiny and a money problem that reaches the front office?
+Problem B. For that franchise: which part of its
+cricket was persistently below what an average side would have produced
+in the same situations; did its auction decisions address that; and what
+is the cheapest change that would recover it now?
+2 Problem A: choosing the
+team
+2.1 Why one dimension is
+not enough
+There are two easy ways to choose a team, and I tried both in earlier
+versions of this project.
+The first is a single composite score: standardise a few measures and
+add them up. It works, but it hides why a team came top, and
+the weights are a matter of taste. My first version averaged a results
+residual with a money residual and put Punjab top; the money link turned
+out to have almost no fit, so I was averaging a real signal with
+noise.
+The second is to scan one dimension in depth. The all-teams engine I
+built earlier (in Ext/Task 1) scanned every phase ×
+discipline × pace/spin cell for every team and put each team’s worst
+cell through three hurdles. It was rigorous and it said “no single
+dominant defect” for half the league, which is what a method that is not
+manufacturing stories should say. But it found two teams with a
+“structural” defect and had nothing to say about results or money.
+So this screen keeps the depth of the cell scan and adds the two
+things it lacked. Every team is described on every
+dimension, and the choice runs through three gates,
+each of which has to be passed on its own. Nothing is added up.
+2.2 Gate 1: results
+against what the runs deserved
+Given the runs a team scored and conceded, how many games should it
+have won? The Pythagorean model answers that: expected win share is
+\(R^k / (R^k + A^k)\), with the
+exponent fitted on all twenty team-seasons rather than borrowed from
+baseball.
+[IMG]
+Actual win percentage against Pythagorean expectation for every
+team-season.
+The fitted exponent is k = 7.92, and expectation explains 54% of the
+variation in win percentage (mean absolute error 7.4 points). That is
+enough fit for the gap between actual and expected to mean
+something.
+2 teams were below expectation in both seasons: RCB
+and PBKS. RCB won -5.4 points fewer than expected in 2023 and -10.9 in
+2024, about 2.4 wins short over the two seasons. They outscored their
+opponents overall and still won fewer than half their games.
+[IMG]
+How often each team stays below expectation in both seasons when its
+matches are resampled.
+I want to be straight about how firm this is. Resampling each team’s
+matches 1,000 times, RCB stay below expectation in both seasons only 58%
+of the time. Part of any team’s conversion gap is luck in close games
+(Section 4 measures how much of RCB’s is). So Gate 1 identifies teams
+worth a closer look. It does not, by itself, prove a skill problem. That
+is what Gate 2 is for.
+2.3 Gate 2: a cause on
+the field that survives scrutiny
+For each team, the screen splits the game into 12 cells (batting and
+bowling × powerplay, middle, death × pace and spin) and measures each
+one in runs above average per 100 balls, from the
+team’s point of view, against the other nine teams. That measure comes
+from the expected-runs model in Section 3: every ball is compared with
+what an average player would have produced at that ground, in that over,
+with those wickets down, against that type of bowling. So a cell’s
+number already has the ground and the match situation taken out.
+A team’s worst cell then has to clear three hurdles, each guarding
+against a different way of fooling yourself:
+[TABLE]
+[IMG]
+Every team, every cell. Numbers are runs above the rest of the league
+per 100 balls; stars count hurdles cleared.
+[IMG]
+Each team’s most defensible weakness and how many hurdles it clears.
+Out of 83 team-cells with enough balls to judge, one
+clears all three hurdles: RCB’s middle-overs spin bowling, at -27.9 runs
+per 100 balls (95% interval -48.5 to -5.7). It has a Benjamini-Hochberg
+q of 0.061, keeps -23.0 per 100 balls with ground fixed effects (p =
+0.001), and is -26.8 in 2023 and -29.0 in 2024. 4 teams have a cell that
+clears two hurdles, and 5 have nothing that clears more than one.
+This agrees with the old all-teams engine, which used raw economy
+rather than runs above average and also put RCB’s middle-overs spin at
+the top of its list. Two independently built methods landing on the same
+cell is reassuring.
+One sensitivity check, because thresholds are choices. RCB’s q is
+0.061. At a stricter 5% false-discovery rate no team would clear Gate 2,
+and the screen would fall back to the team passing the most gates with
+the strongest cell, which is still RCB. The choice is not sitting on a
+knife edge.
+2.4 Gate 3: money
+From the value model in Section 3, every player-season has a WAR
+(wins above replacement), and the league has a going rate for a win:
+what all franchises together paid above the minimum, divided by the wins
+they got for it. A team’s surplus is the market value
+of its wins minus what it paid.
+[IMG]
+Squad spend on players who played against squad WAR, with the league’s
+crore-per-WAR rate drawn as lines.
+5 teams had a negative surplus over the two seasons. RCB’s was −₹11.7
+crore, the most negative in the league, driven by 2023, when they paid
+₹8.81 crore per win against a league rate of ₹6.15.
+[IMG]
+Squad spend against net run rate, 20 team-seasons.
+Hypothesis S4 holds: at team level, what a squad cost explains little
+about how it played (r = 0.36, p = 0.12). Squad WAR, built ball by ball
+without ever looking at a result, tracks win percentage far better (r =
+0.70). If money buys anything, it does not show up in team totals, so
+the money question has to be asked at player level, which is what the
+decision audit in Section 5 does.
+2.5 Every team on every
+dimension
+The user of a scouting report will reasonably ask: “fine, but how
+does this team compare on everything else?” This is the full comparison,
+both seasons pooled.
+[IMG]
+The full scorecard. Values are printed; colour is the team’s rank among
+the ten (green is best).
+Read down the RCB column and the picture is specific rather than
+general. With the ground and match situation held fixed, their
+powerplay bowling ranks 1 of 10 and their death
+bowling 1. Their powerplay batting ranks 2. Their
+middle-overs bowling ranks 10 and their spin
+bowling 10. On money they rank 10 on surplus, and they won 0 of
+3 close finishes. This is not a bad team. It is a good team with one
+hole, in exactly the phase that Part 1 found most closely tied to
+winning.
+2.6 The choice
+[IMG]
+The three gates for every team.
+[TABLE]
+Royal Challengers Bengaluru is the only team that passes all
+three gates, so it is the subject of the rest of this report.
+It is worth saying why the obvious alternatives are not:
+Punjab passes Gates 1 and 3: they also
+under-converted in both seasons and also overpaid. But no cell of theirs
+clears more than one hurdle. Their problems were spread out, which makes
+them harder to diagnose and harder to fix with one decision.
+Mumbai had the worst single season against
+expectation (2024), and their middle-overs spin also clears two hurdles.
+But they over-achieved in 2023, so the results gap does not
+repeat, and their surplus is positive.
+Delhi, Gujarat and Lucknow have two-hurdle cells
+but won as many or more games than their runs deserved.
+Verdicts on the selection hypotheses. S1 supported
+(two teams below expectation in both seasons, though neither firmly
+under resampling). S2 supported for RCB only. S3 supported for RCB (and
+for four others). S4 supported: spend does not explain results at team
+level.
+3 The measuring
+tools
+Testing the team’s problem properly needs three things the raw data
+do not give directly: an expectation for every ball, so
+a ball at Chinnaswamy in the 18th over is compared with balls like it; a
+win probability for every ball, so that “pressure” can
+be defined from the match state; and a value scale that
+puts batting, bowling and price on one axis. Each gets a ladder of
+models, from the simplest thing that could work to the most flexible
+thing I could defend, trained on 2023 and scored on 2024. A random split
+would let a model see half of a match whose other half is in the test
+set; worse, it answers the wrong question. Not “can this interpolate?”
+but “would it have been any use last April?”
+Each tool feeds the next, along the problem map: expected runs give
+runs above expected; win probability turns runs and wickets into one
+currency; that gives runs per win; runs per win gives WAR; WAR and
+prices give value per crore. The detail is in Part 3; here is what each
+step found.
+3.1 Ladder 1: expected
+runs per ball
+[TABLE]
+[IMG]
+Expected-runs ladder, scored on 2024 deliveries.
+Boosting is the most accurate (2.8% better than the null on Poisson
+deviance); M2 is 2.1% better and is the only model whose calibration
+slope is essentially one (1.004). Nobody explains much of a single ball;
+cricket deliveries are mostly noise. For a measurement model, where the
+residual is the product, calibration matters more than the last
+half-percent of accuracy, so M2 is used everywhere
+downstream. Its venue factors also give a clean read on the
+grounds:
+[IMG]
+Venue run multipliers from M2, shrunk towards 1.
+3.2 Ladder 2: win
+probability, WPA and leverage
+[IMG]
+Out-of-sample log-loss for the win-probability ladder (lower is better).
+The best model is W1, the one with the fewest fitted
+numbers: a three-parameter resource curve for expected
+remaining runs, fed through a Pythagorean link with the exponent fixed
+at 6, as in Himanish Ganjoo’s T20 Basics. The logistic and GAM
+models with many more parameters were worse on 2024. A parameter pinned
+by prior knowledge travelled better than the same parameter learned from
+one season. That is Amol Desai’s point about complexity being a cost,
+seen in the numbers.
+W1 gives win probability added (WPA) for every ball and
+leverage, Ganjoo’s p(six) − p(wicket): how much the
+next ball could swing the match, known before it is bowled. Leverage is
+what defines “pressure” in Section 4, without looking at outcomes.
+3.3 Ladder 3: runs to
+wins to crore
+Runs above average per ball (runs above expected plus a wicket term,
+centred within season) roll up into WAR through a
+replacement level and a runs-per-win rate, following Rafique’s cricWAR.
+Runs per win comes from differentiating the Pythagorean model at parity:
+4 × runs per match / k = 90.3 (cricWAR’s published IPL
+figure is 84.5). Squad WAR, built without looking at a result,
+correlates with wins at r = 0.75.
+[IMG]
+Squad WAR against wins, 20 team-seasons.
+The league paid ₹6.15 crore per WAR in 2023 and ₹5.93 in 2024. By
+role and origin, Indian bowlers were the cheapest source of wins and
+overseas players the dearest:
+[IMG]
+Crore paid per win above replacement, by role and origin.
+3.4 Ladder 4: what the
+auction pays for
+A hedonic price model in the style of Malhotra (2022) says overseas
+players cost about 170% more than Indian players in the same role and
+bowlers about 42% less than batters. Once last season’s WAR is in the
+model the market does pay for performance, but price explains only part
+of value. Combined with the chart above, the cheapest wins in this
+market are Indian bowlers.
+[IMG]
+Hedonic price models: coefficients on the log-price scale.
+3.5 The pressure
+layer
+Sahen Gupta’s PACE framework (pressure context, arousal signature,
+consistency, event sequence) shapes this part, along with his warning to
+compare a player with himself. The headline result is short:
+clutch is not repeatable in this data. A batter’s
+pressure differential in 2023 correlates with his 2024 figure at r =
+-0.28 (n = 18). The full layer is in Part 3.
+4 Problem B, part 1: what
+is wrong with RCB?
+4.1 A separate set of
+hypotheses
+Problem A asked “which team?”. Problem B asks a different question,
+so it gets its own register, again written before the tests:
+[TABLE]
+H1 to H6 are about the cricket. H7 and H8 are about the franchise’s
+decisions, and Section 5 tests them.
+4.2 H4: is it the
+ground?
+On raw numbers RCB bowled badly: 9.57 an over conceded against 9.19
+for everyone else. That is the familiar story. But Chinnaswamy is small,
+high and fast-scoring, and they bowl half their overs there.
+[IMG]
+Bowling gap to the league, raw and venue-adjusted, at home and away.
+In a regression with match-clustered errors, the team’s overall
+bowling effect goes from +5.3 to -0.6 runs per 100 balls once ground
+fixed effects are added.
+H4: supported for bowling
+overall. The general “can’t bowl” story is mostly the
+ground. That doesn’t make the problem go away; it relocates it. Whatever
+is left with the ground held fixed is the real target.
+4.3 H1: is the shortfall
+concentrated?
+[IMG]
+Runs above expected per 100 balls by phase and discipline, each season,
+with 95% match-bootstrap intervals.
+[IMG]
+Middle-overs bowling by team and bowler type, both seasons.
+With ground and situation held fixed, RCB’s batting is fine
+everywhere and their powerplay and death bowling rank 1 and 2 in the
+league. One phase stands out: middle-overs bowling, 10th of 10. Split by
+bowler type, it is almost entirely spin. RCB’s spinners in overs 7 to 15
+were -24.1 runs per 100 balls against expectation, while every other
+team’s spinners averaged +3.8; the next-worst team was at -8.2. Their
+middle-overs pace, by contrast, went from -15.2 in 2023 to +5.0 in 2024,
+which is what a cell without a persistent problem looks like.
+The spin split was chosen after seeing that the middle overs were the
+worst phase, which is how people find patterns in noise. The screen in
+Section 2 deals with that properly: middle-overs spin was one of 12
+pre-defined cells for every team, the correction for multiplicity was
+applied across all 12, and it replicates out of sample.
+Treat 2023 as discovery (-22.9 per 100) and 2024 as the test (-25.3, p =
+0.004): the squad changed and the number did not.
+H1: supported. The shortfall sits
+in middle-overs spin, it is the worst cell in the league, it repeats in
+both seasons and it survives the ground adjustment. It cost about 105
+runs in 2023 and 103 in 2024 against the rest of the league’s spinners:
+roughly 1.2 wins a season at 90 runs per win, or ₹7.0 crore at the
+league’s going rate.
+4.4 H2 and H3: deployment
+or squad?
+[IMG]
+Every bowler with 24+ middle-overs balls for the team: share of the work
+against how good they are there (shrunk towards the average).
+The most-used middle-overs bowler was Karn Sharma (17% of the balls),
+whose shrunk rate sits in the 2nd percentile of the league. The bowlers
+with a positive record there, Cameron Green, Mohammed Siraj and Glenn
+Maxwell, got 23% of the work. So there is a deployment problem. But none
+of them is a frontline spinner. Of the frontline spinners with a real
+share (Karn Sharma, Wanindu Hasaranga and Mayank Dagar), none is above
+the league’s median regular middle-overs spinner (shrunk +2.3 per 100).
+The best spin option was Glenn Maxwell, a part-timer whose main job is
+batting.
+H2: partly
+supported. Better middle-overs options were under-used,
+but they are pace bowlers and part-timers and cannot carry the
+phase.
+H3: supported. The squad had no
+spinner of even median quality for the middle overs. This is a missing
+archetype, not a good player having a bad year.
+4.5 H5: was the money
+where it mattered?
+[IMG]
+Realised surplus by player and season. Market value is WAR at the
+league’s going rate.
+In 2023 RCB paid ₹8.81 crore per win above replacement against a
+league rate of ₹6.15, with a realised surplus of −₹19.7 crore. In 2024
+they improved to ₹5.77 per win and a surplus of ₹8.1 crore, carried by
+cheap Indian players who over-delivered. The money lost sits mostly with
+expensive overseas players who either did not play much or did not
+perform.
+H5: supported for 2023,
+weaker for 2024. Money sat on the roles with the
+market’s highest cost per win, while the archetype the squad lacked is
+in the cheapest part of the market.
+4.6 H6: is it pressure,
+or is it luck?
+[IMG]
+Win rate in close games against all other games, both seasons.
+RCB played 3 close games over the two seasons (a chase still between
+25% and 75% at the start of the 18th over) and won 0. In every other
+game they won 14 of 26. They lost only 2 of the 16 games in which they
+were at least 75% to win, about the league norm. So the results gap is
+not a habit of throwing away won games. A good part of it is a handful
+of coin-flips that landed the wrong way, plus a bowling cell that kept
+games closer than they needed to be. And clutch performance does not
+repeat from one season to the next (r = -0.28 for batters).
+H6: rejected.
+No evidence that RCB’s players come apart under pressure in a way that
+would repeat. Paying for “clutch” would be paying for last year’s
+luck.
+5 Problem B, part 2: what
+did the franchise do about it?
+The diagnosis says what was wrong across two seasons. A franchise,
+though, did not get two seasons at once. It got 2023, then had to
+decide, then got 2024. So this section follows the decisions in the
+order they were made, and asks of each: what did the data say at the
+time, what did the franchise do, how did it turn out, and what would
+have been better.
+Two rules. Anything labelled foresight uses only
+what was available at the time. Anything labelled
+hindsight uses later results and is there to grade a
+decision, not to pretend the franchise could have known. And nothing
+here is causal: a released player doing well elsewhere does not prove he
+would have done well at home.
+[IMG]
+The two seasons as a sequence of decisions.
+5.1 Step 1: what 2023
+said (foresight)
+[IMG]
+The team’s cells against the rest of the league, 2023 and 2024.
+An analyst looking only at 2023 would have seen two clearly bad
+cells: middle-overs spin bowling (-26.8 per 100 balls)
+and batting against spin in the powerplay (-19.5, a
+small cell of 330 balls over two seasons). The bowling cell was the
+bigger and more expensive problem.
+[IMG]
+What the middle-overs spin gap cost, each season.
+In 2023 the gap cost about 105 runs against an average spin attack,
+or 1.2 wins, worth about ₹7.2 crore at the going rate. RCB finished one
+win short of the play-offs that season.
+Inside the cell, the 2023 picture looked like this:
+[TABLE]
+Wanindu Hasaranga and Karn Sharma bowled most of the overs, and both
+were well below par. The evidence for any one bowler is thin (a season
+is 100 to 150 balls, and the shrinkage model gives a season’s record
+only about a fifth of the weight), but the evidence for the
+attack was clear.
+5.2 Step 2: what the
+franchise did at the December 2023 auction
+[IMG]
+Contract value of players released, kept and brought in for 2024,
+grouped by what they bowl.
+[TABLE]
+RCB released both of their main spinners from 2023 (Shahbaz Ahmed and
+Wanindu Hasaranga, ₹13.2 crore of contracts). Releasing Wanindu
+Hasaranga was defensible on the numbers: he was the most expensive and
+the worst-performing spinner in the cell. But the replacements were
+Mayank Dagar and Swapnil Singh, for ₹2.0 crore between them, while ₹36.2
+crore of new money went on pace: Alzarri Joseph, Cameron Green, Lockie
+Ferguson, Vijaykumar Vyshak, Yash Dayal. The largest single move, the
+trade for Cameron Green, was a pace-bowling allrounder.
+On the record of 2023 alone, the auction went the other way
+from the diagnosis. The weakness was spin in the middle overs;
+95% of the new bowling money went on pace.
+5.3 Step 3: how the moves
+turned out (hindsight)
+[IMG]
+2024 WAR against contract value for players released and brought in.
+[TABLE]
+Judged as a whole the arrivals did their job: 4.6 WAR in 2024 against
+2.0 for the players let go (wherever they played). Yash Dayal was the
+best of them. But they cost ₹8.72 crore per WAR against a league rate of
+₹5.93, and Alzarri Joseph (₹11.5 crore), the most expensive buy at the
+auction itself, produced 0.0 WAR. Meanwhile the weak cell did not
+move:
+[IMG]
+The team’s middle-overs spinners in each season: share of the work and
+economy.
+In 2024 Karn Sharma bowled 39% of the middle-overs spin, at 10.00 an
+over. The new spinners (Mayank Dagar and Swapnil Singh) were cheaper but
+bowled a minority of the overs, and only Glenn Maxwell was clearly above
+par, in part-time overs.
+5.4 Step 4: what the
+market offered (foresight and hindsight)
+Was there a spinner to buy? The December 2023 auction pool,
+restricted to players who had bowled middle-overs spin in 2023:
+[TABLE]
+The pool was thin. Only 6 spinners in it had bowled any middle overs
+in 2023, and none of them had a long record of doing it well. So “buy a
+proven spinner at the auction” was not really on offer. The proven
+middle-overs spinners were all retained by their teams:
+[IMG]
+Every regular middle-overs spinner in 2023, against how he did in 2024.
+[TABLE]
+Two readings of that table, and both matter.
+Foresight. On 2023 evidence alone, the shrinkage
+model expects any one spinner to be only modestly better than RCB’s own
+(worth about 0.23 wins at best). A single season of middle-overs bowling
+does not separate spinners well; the 2023-to-2024 correlation above is
+weak. The lesson for recruitment is to buy on several seasons of
+evidence, not one.
+Hindsight. The spinners who did repeat were worth a
+lot. Axar Patel bowling RCB’s 2024 middle-overs spin balls at his own
+2024 rate would have saved about 138 runs, or 1.5 wins (₹9.0 crore).
+Most of the established names would have been worth close to a full
+win.
+None of those players was in the auction. The route to them was a
+trade, the same route RCB used for a ₹17.5 crore
+pace-bowling allrounder.
+5.5 Step 5: inside 2024,
+did the season turn on the weak cell?
+[IMG]
+Runs above average per 100 balls by phase, first seven league games
+against the last seven, 2024.
+[TABLE]
+The 2024 season turned sharply: 1 win from 7, then 6 from 7. (This
+repeats the earlier RCB-only review in
+Ext/Task 1 AOPS version, with these tables; the batting and
+conceding rates agree to two decimals.) Batting went from 9.55 to 11.01
+an over and the powerplay wickets from 4 to 18. The new-ball attack,
+built from the auction’s pace money, is the biggest single change.
+Middle-overs spin got a bit cheaper (10.12 to 9.06) but stayed well
+below par.
+H7: supported. The auction did not
+address what 2023 had shown: ₹36.2 crore of new money on pace, ₹2.0
+crore on spin, and the cell was -26.8 and then -29.0.
+H8: supported. The turnaround came
+from the powerplay (with bat and ball) and from the batting, not from
+the weak cell.
+5.6 What they should
+ideally have done
+Putting the steps together, with the hindsight label where it
+belongs:
+[TABLE]
+The cleanest way to put it: the franchise correctly spotted that its
+bowling needed work and spent heavily on it. The money bought a much
+better new-ball attack, and that was a big part of the 2024 recovery.
+But the specific, repeated, expensive hole in the middle overs was left
+as it was, two seasons running.
+6 Problem B, part 3: what
+next
+6.1 The options
+The diagnosis points at one archetype, a middle-overs spinner who
+controls runs, and one deployment habit. The options follow the order in
+which a franchise can act: what is free, what costs money, and what to
+stop doing.
+Two ways to count the prize. The measured cost of
+the problem is about 1.2 wins a season. That describes the past. What a
+franchise can expect to recover is smaller, because the players
+responsible would be expected to drift back towards average anyway.
+Projected on shrunk estimates, the current middle-overs spinners would
+run at about -2.6 per 100 balls next season. The decision is made on the
+smaller number.
+[IMG]
+Simulated wins added per season for each option, on shrunk projections.
+[TABLE]
+On shrunk projections a top-quartile Indian spinner is worth 0.24
+wins a season with a 85% chance of being positive, and the best spinner
+in the league about 0.44. If the last two seasons’ gap simply repeated,
+the top-quartile spinner would be worth about 0.8 wins. These are modest
+numbers and I would rather say so. Two things make them matter: the
+margins (RCB missed the 2023 play-offs by one win and made 2024’s on net
+run rate), and the price (the archetype is in the cheapest part of the
+market).
+6.2 Recommendation 1:
+redeploy now, for free
+Give the middle overs to the bowlers who are good at them, within the
+four-over cap: more for Cameron Green, Mohammed Siraj and Glenn Maxwell,
+fewer for the spinners at the bottom of the league list in this phase.
+It is limited because those bowlers have other jobs, so it cannot be the
+whole answer.
+6.3 Recommendation 2: buy
+one Indian middle-overs spinner, on several seasons of evidence
+[TABLE]
+Indian rather than overseas, because overseas players carry a large
+price premium and each overseas slot spent on a spinner is a slot not
+available for the batting that drives this team’s WAR. This is a list of
+the archetype, not a shopping list. The right use of it is to set a
+ceiling price per player from projected wins at about ₹6.0 crore per
+WAR, and stop bidding there. If the auction pool is thin again, as it
+was in December 2023, the trade window is the route.
+6.4 Recommendation 3: who
+to build around
+[IMG]
+2024 WAR against contract value for the squad.
+[TABLE]
+The core that carried 2024 (Yash Dayal, Mohammed Siraj, Dinesh
+Karthik, Rajat Patidar and Faf du Plessis) came cheaply relative to what
+they produced. The two contracts that cost far more than they returned
+in 2024 were Glenn Maxwell and Alzarri Joseph. One season of WAR is
+noisy, so the two-season column sits next to it.
+6.5 What not to do
+Don’t buy “bowling” in general. Powerplay and death
+bowling were above average once the ground was accounted for, and the
+2024 pace signings made the new ball even stronger. Another expensive
+overseas fast bowler addresses a problem that is mostly
+Chinnaswamy.
+Don’t pay for clutch. It doesn’t repeat (r = -0.28
+for batters, -0.24 for bowlers).
+Don’t recruit spinners on one season. A single
+season of middle-overs bowling is a weak guide to the next.
+Don’t judge bowlers on raw economy at home. Use
+venue-adjusted numbers in contract talks.
+7 The decision
+Decision. At the next auction, Royal Challengers
+Bengaluru should spend on one Indian specialist spinner whose
+shrunk middle-overs rate is in the league’s top quarter over more than
+one season, with a bid ceiling set from projected wins at the
+league’s going rate, and should move middle overs to its
+existing positive options from the next match. It should not
+spend its overseas slots or its largest bids on more pace bowling or on
+players sold as finishers.
+What it is worth. About 0.3 wins a season on
+conservative, shrunk projections, and up to about 0.8 if the past two
+seasons’ gap persisted. In 2023 one more win was the difference between
+missing the play-offs and making them.
+What would change my mind. If a third season showed
+middle-overs spin back near average with the same bowlers, the
+two-season pattern was noise and the money should go elsewhere. If
+ball-tracking showed the spin problem was specific to Chinnaswamy’s
+short square boundaries in a way the venue factor misses, the answer
+would shift towards a different type of spinner rather than a
+better one.
+How to monitor it. Three numbers, every five
+matches: middle-overs spin runs above average per 100 balls (target: at
+least the league median); the share of middle-overs balls going to
+bowlers with positive shrunk rates (target: more than half); and cost
+per WAR against the league rate at season end.
+7.1 Summary of
+verdicts
+[TABLE]
+8 Epilogue: what actually
+happened next
+The data stop in May 2024, and nothing below was used in the
+analysis. At the November 2024 mega auction Royal Challengers Bengaluru
+bought two spinners: Krunal Pandya for ₹5.75 crore and
+Suyash Sharma for ₹2.6 crore (Sportskeeda;
+Onmanorama).
+Krunal Pandya is 3rd on the shortlist above, and Suyash Sharma is on the
+2023 list of regular middle-overs spinners. RCB won the 2025 title,
+beating Punjab by six runs in the final, and Krunal Pandya was player of
+the match with 2 for 17 from his four overs (cricket.com).
+One outcome proves nothing on its own, and many things changed in a
+mega-auction year. But it is reassuring that the archetype this analysis
+points to, from two seasons of ball-by-ball data, is the one a real
+recruitment team went looking for a season later.
+9 Limitations
+Two seasons is not much. Player estimates are
+heavily shrunk, and the gate-1 result for every team is uncertain under
+resampling.
+Auction prices are incomplete. Some replacement
+signings are not on the auction sheets and are left unpriced; trades are
+priced at the sheet value.
+The audit is not causal. “Released player X did
+well elsewhere” mixes his skill with a new team, role and ground.
+The foresight market is thin. Only a handful of
+auction-pool spinners had 2023 middle-overs evidence, so foresight
+comparisons rest on small samples.
+WAR is a description, at a stated replacement level
+and runs-per-win rate. Other defensible choices would move the levels,
+not much the rankings.
+References
+Bandyopadhyay, R. Runs Above Expected (RAE) and Wicket Effect
+(WE). arXiv:2608.18020.
+Benjamini, Y. and Hochberg, Y. (1995). Controlling the false
+discovery rate. JRSS B 57(1).
+Date, K. A Cricketing View (blog), on set batters and
+ball-by-ball expectation.
+Desai, A. DPL 2026 mentor session: statistical modelling, problem
+framing and pitfalls.
+Ganjoo, H. T20 Basics. hganjoo.github.io/t20basics.
+Gupta, S. DPL 2026 mentor session: sports psychology and the PACE
+framework.
+Malhotra, G. (2022). Predicting auction prices and economic value
+creation of cricketers in the IPL. Journal of Sports Analytics
+8(3).
+Nielsen, T. Cricket Sims (Substack), on the stability of
+T20 metrics.
+Rafique, H. (2022). cricWAR: a reproducible system for evaluating
+player performance in limited-overs cricket. CMU Sports Analytics
+Conference.
+Walunj, O. DPL 2026 mentor session: game state, entry points, roles
+and squad strategy.
+Weston, D. IPL Auctions: Market Dynamics (Substack).
+Epilogue sources: Sportskeeda (RCB 2025 squad and prices);
+Onmanorama (mega auction day two); cricket.com (2025 final report).
