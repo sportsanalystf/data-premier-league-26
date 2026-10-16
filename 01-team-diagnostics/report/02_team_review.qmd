@@ -1,0 +1,788 @@
+---
+title: "Finding the leak"
+subtitle: "Part 2 of 3 · Choosing a franchise fairly, diagnosing it, and auditing the decisions it made"
+author: "Faizan Khan"
+date: last-modified
+date-format: "D MMMM YYYY"
+abstract: |
+  Data Premier League 2026, preliminary round, Task 1. The task has two problems inside it. Problem A: which franchise should a scouting report be about? Problem B: for that franchise, what is wrong, what did it do about it, and what should it do next? I answer A with a screen every team goes through, using three gates fixed in advance; only one team passes all three. I answer B with a separate set of hypotheses and a decision audit that follows the franchise season by season, from its 2023 data to the December 2023 auction to its 2024 results, and puts a number in runs, wins and crore on each step. Everything is in R and every number in the text is computed.
+format:
+  html:
+    theme: cosmo
+    css: report.css
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    toc-title: "Contents"
+    number-sections: true
+    code-fold: true
+    code-summary: "Show the R"
+    embed-resources: true
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    smooth-scroll: true
+    anchor-sections: true
+    html-math-method: mathml
+execute:
+  echo: true
+  warning: false
+  message: false
+knitr:
+  opts_knit:
+    root.dir: ".."
+  opts_chunk:
+    fig.width: 9
+    fig.height: 5.2
+    dpi: 150
+    fig.align: center
+    out.width: "100%"
+---
+
+```{r setup}
+#| include: false
+source("report/_common.R")
+g   <- SCR$gates
+gt  <- g |> filter(abbr == TA)
+cl  <- SCR$cells |> filter(team == TEAM) |> arrange(desc(hurdles), per100) |> slice(1)
+st  <- A$stake
+el  <- A$early_late$results
+mk  <- A$money_kind
+arr <- mk |> filter(move == "Arrived")
+pace_new <- sum(arr$cr[arr$group == "Pace bowlers"]); spin_new <- sum(arr$cr[arr$group == "Spin bowlers"])
+os  <- A$outcome_summary
+rpw <- V$pv$rpw
+rate <- V$money$rate
+sim <- O$sim_sum
+top_buy <- A$outcomes |> filter(move == "Arrived", status == "Sold") |> slice_max(price_cr, n = 1)
+optC <- sim$mean[grepl("^C", sim$option)]; optA <- sim$mean[grepl("^A", sim$option)]; optD <- sim$mean[grepl("^D", sim$option)]
+```
+
+::: {.panel .focus}
+**The short version.**
+
+*Which team.* I did not pick a franchise and then look for its problems. Every team went through the same three gates: did it win fewer games than its runs deserved in **both** seasons; does it have a weakness on the field that survives a multiple-testing correction, a ground adjustment and a second season; and did it pay more for its squad than its wins were worth. Only **`r TEAM`** passes all three.
+
+*What is wrong.* Most of their reputation for bad bowling is their home ground. What is left, and what repeats in both seasons, is **spin in the middle overs**: `r s1(cl$per100)` runs per 100 balls against the rest of the league, the worst cell of any team. It cost about `r f1(st$runs_lost[1], 0)` runs, or `r f1(st$wins_lost[1], 1)` wins, in 2023 and the same again in 2024.
+
+*What they did.* After 2023 the data pointed at spin. At the December 2023 auction `r TA` released both of their main spinners, spent `r rs(pace_new)` crore of new money on pace and `r rs(spin_new)` crore on spin, and the middle-overs spin cell was no better in 2024 (`r s1(cl$per100_2023)` and then `r s1(cl$per100_2024)`). Their 2024 turnaround, from 1 win in 7 to `r el$W[2]` in 7, came from the powerplay, not from the weak cell.
+
+*What next.* Buy one Indian middle-overs spinner whose rate is in the league's top quarter, with a bid ceiling set from projected wins, and move middle overs to the bowlers who are already good at them. Don't spend the big money on more pace or on "clutch".
+:::
+
+# The task, and how I approached it
+
+The brief asks for a scouting report on one franchise across two seasons: diagnose the problem and suggest strategies. Read closely, that is two problems, and they need different methods.
+
+- **Problem A: which team?** A choice among ten. It needs a fair screen, so that the team is the output of an analysis and not an input to it.
+- **Problem B: that team's problem.** A diagnosis and a set of decisions. It needs its own hypotheses, its own tests and a way to put a value on each decision.
+
+I worked through both using the same six steps: describe the **situation**, **search** what others have already learned, name the **obvious gap**, choose a **representation** that ties the pieces together, write down **hypotheses** before testing them, and arrive at the **key question**. I borrowed this sequence from a problem-solving course, because it forces the order that analysis usually skips: you are not allowed to pick the answer first.
+
+```{r fig-six}
+#| fig-cap: "The six steps, as applied to this task."
+#| fig-height: 2.4
+#| fig-width: 12
+fig_six_steps(tibble(
+  step = c("Situation", "Search", "Obvious gap", "Representation", "Hypotheses", "Key question"),
+  text = c("Ten franchises, two seasons, ball-by-ball data and two auction sheets",
+           "Mentor sessions and published work on run value, WAR, pressure and auctions",
+           "Some teams win fewer games than their cricket deserves; why, and what did they do?",
+           "A chain from money to squad to phases to runs to wins, and back to the next auction",
+           "S1-S4 for choosing the team; H1-H8 for that team's problem and decisions",
+           "Where is the leak, did the franchise fix it, and what is the cheapest fix now?")))
+```
+
+## Situation
+
+A franchise cannot change the last two seasons. It can change three things: **who bowls and bats when** (deployment), **who is in the squad** (retention, trades and the auction) and **what it pays** (price discipline). An analysis that does not end in one of those three is description, not decision support. Amol Desai put it more simply in the mentor session: start at the decision, name the kind of question you are asking, and only then pick a model.
+
+```{r question-types}
+tribble(
+  ~Question, ~Kind, ~`What it needs`,
+  "Which franchise under-achieved relative to its own cricket, and has a fixable cause?", "Describe", "Outcome against an expectation of outcome; a fair screen",
+  "What does a ball, a wicket, a player-season contribute?", "Estimate", "A state-dependent baseline to measure against",
+  "How likely is the batting side to win from here?", "Predict", "A probability model that holds up out of sample",
+  "Why did this team under-achieve?", "Explain", "Ground, game state and opposition held fixed",
+  "Did the franchise's decisions address the problem?", "Audit", "What was known at the time, then what happened",
+  "What should the franchise do next?", "Select", "Options priced in wins and crore, with uncertainty"
+) |> tab(caption = "The kinds of question in this project")
+```
+
+## Search: what is already known
+
+Starting from zero would waste what others have worked out. These are the sources the method leans on, and what I take from each. The mentor sessions shaped the questions; the published work shaped the tools.
+
+```{r search}
+search_table() |>
+  rename(Area = area, Source = source, `What I take from it` = what_we_take) |>
+  tab(caption = "Prior work and what this project borrows from it")
+```
+
+## The obvious gap
+
+Part 1 showed that grounds, seasons and phases all move raw numbers a lot, and that most team weak spots move between seasons. The obvious gap is therefore not "which team was worst" (the table already says that) but **which team under-achieved relative to its own cricket, in a way that repeats and that a franchise could act on**. That is a narrower and more useful question, and it is the one Problem A answers.
+
+## Representation: the problem map
+
+```{r fig-map}
+#| fig-cap: "The problem map for Task 1. Every analysis in this report measures one of these links."
+#| fig-height: 6.2
+#| fig-width: 12
+fig_problem_map()
+```
+
+The map is how I hold the whole task in my head. Money (purse and market) buys a squad. The squad is deployed into three phases, under conditions set by the ground. Phases produce runs for and against. Runs turn into wins, through how well a team converts close games. And wins, set against what the squad cost, give value per crore, which feeds back into the next auction. A franchise can only pull the levers on the left (purse, market, squad, deployment). Everything on the right is an outcome. So a useful diagnosis has to trace an outcome on the right back to a lever on the left.
+
+Each link has a measurement attached: the hedonic price model for the market, runs above expected for the phases, the Pythagorean link from runs to wins, win probability for conversion, and WAR for value. Section 3 builds those tools, one after another, each one feeding the next.
+
+## Hypotheses for choosing the team
+
+Written down before the screen was run, each with what would kill it:
+
+```{r sel-hyp}
+selection_hypotheses() |>
+  rename(ID = id, Hypothesis = hypothesis, Test = test, `Would falsify it` = falsifier) |>
+  tab(caption = "Hypotheses for Problem A, recorded before testing")
+```
+
+## The key questions
+
+::: {.panel}
+**Problem A.** Which franchise lost more games than its cricket deserved, in both seasons, with a cause on the field that survives scrutiny and a money problem that reaches the front office?
+
+**Problem B.** For that franchise: which part of its cricket was persistently below what an average side would have produced in the same situations; did its auction decisions address that; and what is the cheapest change that would recover it now?
+:::
+
+# Problem A: choosing the team
+
+## Why one dimension is not enough
+
+There are two easy ways to choose a team, and I tried both in earlier versions of this project.
+
+The first is a single composite score: standardise a few measures and add them up. It works, but it hides *why* a team came top, and the weights are a matter of taste. My first version averaged a results residual with a money residual and put Punjab top; the money link turned out to have almost no fit, so I was averaging a real signal with noise.
+
+The second is to scan one dimension in depth. An all-teams engine I built earlier for this task scanned every phase × discipline × pace/spin cell for every team and put each team's worst cell through three hurdles. It was rigorous and it said "no single dominant defect" for half the league, which is what a method that is not manufacturing stories should say. But it found two teams with a "structural" defect and had nothing to say about results or money.
+
+So this screen keeps the depth of the cell scan and adds the two things it lacked. Every team is described on **every** dimension, and the choice runs through **three gates**, each of which has to be passed on its own. Nothing is added up.
+
+## Gate 1: results against what the runs deserved
+
+Given the runs a team scored and conceded, how many games should it have won? The Pythagorean model answers that: expected win share is $R^k / (R^k + A^k)$, with the exponent fitted on all twenty team-seasons rather than borrowed from baseball.
+
+```{r fig-pythag}
+#| fig-cap: "Actual win percentage against Pythagorean expectation for every team-season."
+#| fig-height: 6
+fig_pythag(SCR)
+```
+
+The fitted exponent is k = `r f1(SCR$results$k, 2)`, and expectation explains `r f1(100 * SCR$results$fit$r2, 0)`% of the variation in win percentage (mean absolute error `r f1(SCR$results$fit$mae, 1)` points). That is enough fit for the gap between actual and expected to mean something.
+
+`r sum(g$G1)` teams were below expectation in **both** seasons: `r and_list(g$abbr[g$G1])`. `r TA` won `r f1(abs(gt$gap_2023), 1)` percentage points fewer games than expected in 2023 and `r f1(abs(gt$gap_2024), 1)` fewer in 2024, about `r f1(abs(gt$wins_short), 1)` wins short over the two seasons. They outscored their opponents overall and still won fewer than half their games.
+
+```{r fig-g1-boot}
+#| fig-cap: "How often each team stays below expectation in both seasons when its matches are resampled."
+#| fig-height: 4.4
+fig_g1_boot(SCR)
+```
+
+I want to be straight about how firm this is. Resampling each team's matches 1,000 times, `r TA` stay below expectation in both seasons only `r f1(gt$p_both_below, 0)`% of the time. Part of any team's conversion gap is luck in close games (Section 4 measures how much of `r TA`'s is). So Gate 1 identifies teams worth a closer look. It does not, by itself, prove a skill problem. That is what Gate 2 is for.
+
+## Gate 2: a cause on the field that survives scrutiny
+
+For each team, the screen splits the game into 12 cells (batting and bowling × powerplay, middle, death × pace and spin) and measures each one in **runs above average per 100 balls**, from the team's point of view, against the other nine teams. That measure comes from the expected-runs model in Section 3: every ball is compared with what an average player would have produced at that ground, in that over, with those wickets down, against that type of bowling. So a cell's number already has the ground and the match situation taken out.
+
+A team's worst cell then has to clear three hurdles, each guarding against a different way of fooling yourself:
+
+| Hurdle | Question | Guards against |
+|---|---|---|
+| **Multiplicity** | Still notable after a Benjamini-Hochberg correction across the team's 12 cells (q < 0.10)? | Picking the most extreme of many noisy numbers |
+| **Ground** | Still worse in a regression on raw runs with ground and season fixed effects and match-clustered errors (p < 0.05)? | A home-ground artefact |
+| **Replication** | Worse in 2023 **and** in 2024, separately? | One bad season |
+
+```{r fig-cells}
+#| fig-cap: "Every team, every cell. Numbers are runs above the rest of the league per 100 balls; stars count hurdles cleared."
+#| fig-height: 6.6
+#| fig-width: 11
+fig_cell_scan(SCR)
+```
+
+```{r fig-tiers}
+#| fig-cap: "Each team's most defensible weakness and how many hurdles it clears."
+#| fig-height: 4.8
+fig_tiers(SCR)
+```
+
+Out of `r nrow(SCR$cells)` team-cells with enough balls to judge, **one** clears all three hurdles: `r TA`'s middle-overs spin bowling, at `r s1(cl$per100)` runs per 100 balls (95% interval `r s1(cl$lo)` to `r s1(cl$hi)`). It has a Benjamini-Hochberg q of `r f1(cl$q_bh, 3)`, keeps `r s1(cl$ground_per100)` per 100 balls with ground fixed effects (`r pv_txt(cl$ground_p)`), and is `r s1(cl$per100_2023)` in 2023 and `r s1(cl$per100_2024)` in 2024. `r sum(g$tier == "probable")` teams have a cell that clears two hurdles, and `r sum(g$tier %in% c("indicative", "diffuse"))` have nothing that clears more than one.
+
+This agrees with the old all-teams engine, which used raw economy rather than runs above average and also put `r TA`'s middle-overs spin at the top of its list. Two independently built methods landing on the same cell is reassuring.
+
+One sensitivity check, because thresholds are choices. `r TA`'s q is `r f1(cl$q_bh, 3)`. At a stricter 5% false-discovery rate no team would clear Gate 2, and the screen would fall back to the team passing the most gates with the strongest cell, which is still `r TA`. The choice is not sitting on a knife edge.
+
+## Gate 3: money
+
+From the value model in Section 3, every player-season has a WAR (wins above replacement), and the league has a going rate for a win: what all franchises together paid above the minimum, divided by the wins they got for it. A team's **surplus** is the market value of its wins minus what it paid.
+
+```{r fig-money}
+#| fig-cap: "Squad spend on players who played against squad WAR, with the league's crore-per-WAR rate drawn as lines."
+#| fig-height: 6
+fig_money_gate(SCR, V)
+```
+
+`r sum(g$G3)` teams had a negative surplus over the two seasons. `r TA`'s was `r rs(gt$surplus_cr)` crore, the most negative in the league, driven by 2023, when they paid `r rs(SCR$money$cr_per_war_2023[SCR$money$abbr == TA], 2)` crore per win against a league rate of `r rs(rate$cr_per_war[1], 2)`.
+
+```{r fig-spend-link}
+#| fig-cap: "Squad spend against net run rate, 20 team-seasons."
+#| fig-height: 4.8
+#| fig-width: 8
+fig_spend_link(SCR)
+```
+
+Hypothesis S4 holds: at team level, what a squad cost explains little about how it played (r = `r f1(SCR$spend_link$r_nrr, 2)`, `r pv_txt(SCR$spend_link$p_nrr)`). Squad WAR, built ball by ball without ever looking at a result, tracks win percentage far better (r = `r f1(SCR$spend_link$r_war_win, 2)`). If money buys anything, it does not show up in team totals, so the money question has to be asked at player level, which is what the decision audit in Section 5 does.
+
+## Every team on every dimension
+
+The user of a scouting report will reasonably ask: "fine, but how does this team compare on everything else?" This is the full comparison, both seasons pooled.
+
+```{r fig-scorecard}
+#| fig-cap: "The full scorecard. Values are printed; colour is the team's rank among the ten (green is best)."
+#| fig-height: 8.2
+#| fig-width: 11
+fig_scorecard(SCR)
+```
+
+```{r sc-numbers}
+#| include: false
+scl <- SCR$scorecard_long |> filter(abbr == TA)
+r_ <- function(d) scl$rank[scl$dim == d]
+```
+
+Read down the `r TA` column and the picture is specific rather than general. With the ground and match situation held fixed, their **powerplay bowling ranks `r r_("Bowling PP")` of 10** and their **death bowling `r r_("Bowling DTH")`**. Their powerplay batting ranks `r r_("Batting PP")`. Their **middle-overs bowling ranks `r r_("Bowling MID")`** and their **spin bowling `r r_("Bowling Spin")`**. On money they rank `r r_("surplus_cr")` on surplus, and they won `r SCR$close$close_W[SCR$close$team == TEAM] |> sum()` of `r SCR$close$close_M[SCR$close$team == TEAM] |> sum()` close finishes. This is not a bad team. It is a good team with one hole, in exactly the phase that Part 1 found most closely tied to winning.
+
+## The choice
+
+```{r fig-gates}
+#| fig-cap: "The three gates for every team."
+#| fig-height: 6
+#| fig-width: 7
+fig_gates(SCR)
+```
+
+```{r tbl-gates}
+g |> transmute(Team = abbr, `Gap 2023` = gap_2023, `Gap 2024` = gap_2024,
+               `P(both below)` = p_both_below, `Strongest cell` = cell,
+               `Cell /100` = cell_per100, Hurdles = hurdles,
+               `Surplus (cr)` = surplus_cr, Gates = gates_passed) |>
+  tab(caption = "Gate results for every team, sorted by gates passed", digits = 1,
+      highlight = which(g$abbr == TA))
+```
+
+**`r TEAM` is the only team that passes all three gates**, so it is the subject of the rest of this report. It is worth saying why the obvious alternatives are not:
+
+- **Punjab** passes Gates 1 and 3: they also under-converted in both seasons and also overpaid. But no cell of theirs clears more than one hurdle. Their problems were spread out, which makes them harder to diagnose and harder to fix with one decision.
+- **Mumbai** had the worst single season against expectation (2024), and their middle-overs spin also clears two hurdles. But they *over*-achieved in 2023, so the results gap does not repeat, and their surplus is positive.
+- **Delhi, Gujarat and Lucknow** have two-hurdle cells but won as many or more games than their runs deserved.
+
+::: {.panel}
+**Verdicts on the selection hypotheses.** S1 supported (two teams below expectation in both seasons, though neither firmly under resampling). S2 supported for `r TA` only. S3 supported for `r TA` (and for four others). S4 supported: spend does not explain results at team level.
+:::
+
+# The measuring tools
+
+Testing the team's problem properly needs three things the raw data do not give directly: an **expectation** for every ball, so a ball at `r HOME` in the 18th over is compared with balls like it; a **win probability** for every ball, so that "pressure" can be defined from the match state; and a **value scale** that puts batting, bowling and price on one axis. Each gets a ladder of models, from the simplest thing that could work to the most flexible thing I could defend, trained on 2023 and scored on 2024. A random split would let a model see half of a match whose other half is in the test set; worse, it answers the wrong question. Not "can this interpolate?" but "would it have been any use last April?"
+
+Each tool feeds the next, along the problem map: expected runs give runs above expected; win probability turns runs and wickets into one currency; that gives runs per win; runs per win gives WAR; WAR and prices give value per crore. The detail is in [Part 3](03_player_appendix.html#methods); here is what each step found.
+
+## Ladder 1: expected runs per ball
+
+```{r el-numbers}
+#| include: false
+els <- EL$scores
+m2 <- els |> filter(grepl("^M2", model)); m4 <- els |> filter(grepl("^M4", model))
+```
+
+| Model | What it is | Why it is on the ladder |
+|---|---|---|
+| **M0** | The global mean | The null |
+| **M1** | Cell means by over and wickets | Classic run expectancy, as in cricWAR |
+| **M2** | Multiplicative log-linear model, Poisson backfitting, empirical-Bayes shrinkage on each factor | Bandyopadhyay's runs-above-expected structure; every factor is a readable multiplier |
+| **M3** | Hierarchical Poisson model with batter, bowler and venue effects | Partial pooling on people and places |
+| **M4** | Gradient-boosted trees | Non-linearity without being told where |
+
+```{r fig-el}
+#| fig-cap: "Expected-runs ladder, scored on 2024 deliveries."
+#| fig-height: 4
+fig_exp_ladder(els)
+```
+
+Boosting is the most accurate (`r f1(m4$pct_better_than_null)`% better than the null on Poisson deviance); M2 is `r f1(m2$pct_better_than_null)`% better and is the only model whose calibration slope is essentially one (`r f1(m2$calib_slope, 3)`). Nobody explains much of a single ball; cricket deliveries are mostly noise. For a measurement model, where the residual *is* the product, calibration matters more than the last half-percent of accuracy, so **M2 is used everywhere downstream**. Its venue factors also give a clean read on the grounds:
+
+```{r fig-venue}
+#| fig-cap: "Venue run multipliers from M2, shrunk towards 1."
+#| fig-height: 4.6
+fig_venue_gamma(EL$m2_gammas$venue, HOME)
+```
+
+## Ladder 2: win probability, WPA and leverage
+
+```{r fig-wp}
+#| fig-cap: "Out-of-sample log-loss for the win-probability ladder (lower is better)."
+#| fig-height: 3.6
+fig_wp_ladder(WP$scores)
+```
+
+The best model is **W1, the one with the fewest fitted numbers**: a three-parameter resource curve for expected remaining runs, fed through a Pythagorean link with the exponent fixed at 6, as in Himanish Ganjoo's *T20 Basics*. The logistic and GAM models with many more parameters were worse on 2024. A parameter pinned by prior knowledge travelled better than the same parameter learned from one season. That is Amol Desai's point about complexity being a cost, seen in the numbers.
+
+W1 gives win probability added (WPA) for every ball and **leverage**, Ganjoo's p(six) − p(wicket): how much the next ball could swing the match, known before it is bowled. Leverage is what defines "pressure" in Section 4, without looking at outcomes.
+
+## Ladder 3: runs to wins to crore
+
+```{r value-numbers}
+#| include: false
+pv <- V$pv
+tw <- TS |> select(team, season, W) |> left_join(V$team, by = c("team", "season"))
+r_war_w <- cor(tw$war_total, tw$W)
+```
+
+Runs above average per ball (runs above expected plus a wicket term, centred within season) roll up into **WAR** through a replacement level and a runs-per-win rate, following Rafique's cricWAR. Runs per win comes from differentiating the Pythagorean model at parity: 4 × runs per match / k = **`r f1(rpw, 1)`** (cricWAR's published IPL figure is 84.5). Squad WAR, built without looking at a result, correlates with wins at r = `r f1(r_war_w, 2)`.
+
+```{r fig-team-war}
+#| fig-cap: "Squad WAR against wins, 20 team-seasons."
+#| fig-height: 4.8
+fig_team_war(V$team, TS, TEAM)
+```
+
+The league paid `r rs(rate$cr_per_war[1], 2)` crore per WAR in 2023 and `r rs(rate$cr_per_war[2], 2)` in 2024. By role and origin, Indian bowlers were the cheapest source of wins and overseas players the dearest:
+
+```{r fig-cpw}
+#| fig-cap: "Crore paid per win above replacement, by role and origin."
+#| fig-height: 4
+fig_cr_per_war(V$money)
+```
+
+## Ladder 4: what the auction pays for
+
+```{r hed-numbers}
+#| include: false
+h1 <- coef(V$hedonic$h1)
+ovs_prem <- (exp(h1[["overseasTRUE"]]) - 1) * 100
+bowl_disc <- (1 - exp(h1[["role4Bowler"]])) * 100
+```
+
+A hedonic price model in the style of Malhotra (2022) says overseas players cost about `r round(ovs_prem)`% more than Indian players in the same role and bowlers about `r round(bowl_disc)`% less than batters. Once last season's WAR is in the model the market does pay for performance, but price explains only part of value. Combined with the chart above, the cheapest wins in this market are **Indian bowlers**.
+
+```{r fig-hed}
+#| fig-cap: "Hedonic price models: coefficients on the log-price scale."
+#| fig-height: 4.6
+fig_hedonic(V$hedonic)
+```
+
+## The pressure layer
+
+Sahen Gupta's PACE framework (pressure context, arousal signature, consistency, event sequence) shapes this part, along with his warning to compare a player with himself. The headline result is short: **clutch is not repeatable in this data**. A batter's pressure differential in 2023 correlates with his 2024 figure at r = `r f1(P$repeat_bat$r, 2)` (n = `r P$repeat_bat$n`). The full layer is in [Part 3](03_player_appendix.html#pressure).
+
+# Problem B, part 1: what is wrong with `r TA`?
+
+## A separate set of hypotheses
+
+Problem A asked "which team?". Problem B asks a different question, so it gets its own register, again written before the tests:
+
+```{r team-hyp}
+team_hypotheses(TA) |>
+  rename(ID = id, Area = group, Hypothesis = hypothesis, `Would support it` = supports, `Would falsify it` = falsifies) |>
+  tab(caption = sprintf("Hypotheses for %s, recorded before testing", TA))
+```
+
+H1 to H6 are about the cricket. H7 and H8 are about the franchise's decisions, and Section 5 tests them.
+
+```{r interp-setup}
+#| include: false
+vr <- X$venue_reg; vc <- X$venue
+b_spin <- O$b_spin; b23 <- O$b_spin_23; b24 <- O$b_spin_24
+good <- O$good; own_spin <- O$own_spin; part_spin <- O$part_spin
+lc <- X$league_cells |> filter(team == TEAM)
+pace_mid <- VF |> filter(team_bowl == TEAM, phase == "MID", kind == "Pace") |>
+  group_by(year) |> summarise(per100 = 100 * mean(raa_bowl), .groups = "drop")
+raw_econ <- D |> filter(!no_result) |> mutate(t = team_bowl == TEAM) |>
+  group_by(t) |> summarise(econ = 6 * sum(score) / sum(legal_ball), .groups = "drop")
+```
+
+## H4: is it the ground?
+
+On raw numbers `r TA` bowled badly: `r f1(raw_econ$econ[raw_econ$t], 2)` an over conceded against `r f1(raw_econ$econ[!raw_econ$t], 2)` for everyone else. That is the familiar story. But `r HOME` is small, high and fast-scoring, and they bowl half their overs there.
+
+```{r fig-venue-check}
+#| fig-cap: "Bowling gap to the league, raw and venue-adjusted, at home and away."
+#| fig-height: 3.4
+fig_venue_check(vc)
+```
+
+In a regression with match-clustered errors, the team's overall bowling effect goes from `r s1(vr$coef_per100[1])` to `r s1(vr$coef_per100[2])` runs per 100 balls once ground fixed effects are added.
+
+::: {.panel}
+**H4: <span class="verdict-supported">supported for bowling overall</span>.** The general "can't bowl" story is mostly the ground. That doesn't make the problem go away; it relocates it. Whatever is left with the ground held fixed is the real target.
+:::
+
+## H1: is the shortfall concentrated?
+
+```{r fig-team-cells}
+#| fig-cap: "Runs above expected per 100 balls by phase and discipline, each season, with 95% match-bootstrap intervals."
+#| fig-height: 4.4
+fig_cells(X$cells_season, TEAM)
+```
+
+```{r fig-mid-spin}
+#| fig-cap: "Middle-overs bowling by team and bowler type, both seasons."
+#| fig-height: 4.6
+fig_mid_spin(VF, TEAM)
+```
+
+With ground and situation held fixed, `r TA`'s batting is fine everywhere and their powerplay and death bowling rank `r lc$rank[lc$discipline == "Bowling" & lc$phase == "PP"]` and `r lc$rank[lc$discipline == "Bowling" & lc$phase == "DTH"]` in the league. One phase stands out: middle-overs bowling, 10th of 10. Split by bowler type, it is almost entirely spin. `r TA`'s spinners in overs 7 to 15 were `r f1(100 * b_spin[["est"]], 1)` runs per 100 balls against expectation, while every other team's spinners averaged `r s1(O$lg_spin)` (the gap of `r f1(O$lg_spin - 100 * b_spin[["est"]], 1)` is the cell value in the screen); the next-worst team was at `r f1(O$spin_rank$per100[2], 1)`. Their middle-overs pace, by contrast, went from `r f1(pace_mid$per100[1], 1)` in 2023 to `r s1(pace_mid$per100[2])` in 2024, which is what a cell without a persistent problem looks like.
+
+The spin split was chosen after seeing that the middle overs were the worst phase, which is how people find patterns in noise. The screen in Section 2 deals with that properly: middle-overs spin was one of 12 pre-defined cells for every team, the correction for multiplicity was applied across all 12, and it **replicates out of sample**. Treat 2023 as discovery (`r f1(100 * b23[["est"]], 1)` per 100) and 2024 as the test (`r f1(100 * b24[["est"]], 1)`, `r pv_txt(b24[["p"]])`): the squad changed and the number did not.
+
+::: {.panel}
+**H1: <span class="verdict-supported">supported</span>.** The shortfall sits in middle-overs spin, it is the worst cell in the league, it repeats in both seasons and it survives the ground adjustment. It cost about `r f1(st$runs_lost[1], 0)` runs in 2023 and `r f1(st$runs_lost[2], 0)` in 2024 against the rest of the league's spinners: roughly `r f1(mean(st$wins_lost), 1)` wins a season at `r f1(rpw, 0)` runs per win, or `r rs(mean(st$worth_cr))` crore at the league's going rate.
+:::
+
+## H2 and H3: deployment or squad?
+
+```{r fig-squad}
+#| fig-cap: "Every bowler with 24+ middle-overs balls for the team: share of the work against how good they are there (shrunk towards the average)."
+#| fig-height: 5.2
+fig_squad_cell(X$squad_cell)
+```
+
+```{r squad-numbers}
+#| include: false
+sq <- X$squad_cell; top_used <- sq |> slice_max(share, n = 1)
+```
+
+The most-used middle-overs bowler was `r top_used$player` (`r f1(top_used$share, 0)`% of the balls), whose shrunk rate sits in the `r ordinal(round(top_used$league_pct))` percentile of the league. The bowlers with a positive record there, `r and_list(good$player)`, got `r f1(sum(good$share), 0)`% of the work. So there is a deployment problem. But none of them is a frontline spinner. Of the frontline spinners with a real share (`r and_list(own_spin$player)`), none is above the league's median regular middle-overs spinner (shrunk `r s1(O$med_reg)` per 100). The best spin option was `r and_list(part_spin$player)`, a part-timer whose main job is batting.
+
+::: {.panel}
+**H2: <span class="verdict-open">partly supported</span>.** Better middle-overs options were under-used, but they are pace bowlers and part-timers and cannot carry the phase.
+
+**H3: <span class="verdict-supported">supported</span>.** The squad had no spinner of even median quality for the middle overs. This is a missing archetype, not a good player having a bad year.
+:::
+
+## H5: was the money where it mattered?
+
+```{r fig-surplus}
+#| fig-cap: "Realised surplus by player and season. Market value is WAR at the league's going rate."
+#| fig-height: 6.8
+fig_surplus(V$money, TEAM)
+```
+
+```{r money-numbers}
+#| include: false
+tv <- V$team |> filter(team == TEAM) |> arrange(season)
+```
+
+In 2023 `r TA` paid `r rs(tv$cr_per_war_team[1], 2)` crore per win above replacement against a league rate of `r rs(rate$cr_per_war[1], 2)`, with a realised surplus of `r rs(tv$surplus_cr[1])` crore. In 2024 they improved to `r rs(tv$cr_per_war_team[2], 2)` per win and a surplus of `r rs(tv$surplus_cr[2])` crore, carried by cheap Indian players who over-delivered. The money lost sits mostly with expensive overseas players who either did not play much or did not perform.
+
+::: {.panel}
+**H5: <span class="verdict-supported">supported for 2023, weaker for 2024</span>.** Money sat on the roles with the market's highest cost per win, while the archetype the squad lacked is in the cheapest part of the market.
+:::
+
+## H6: is it pressure, or is it luck?
+
+```{r fig-close}
+#| fig-cap: "Win rate in close games against all other games, both seasons."
+#| fig-height: 4.6
+fig_close(X$close, TEAM)
+```
+
+```{r h6-numbers}
+#| include: false
+cg <- X$close |> filter(team == TEAM) |> summarise(cM = sum(close_M), cW = sum(close_W), oM = sum(other_M), oW = sum(other_W))
+sw <- X$swings |> filter(team == TEAM)
+```
+
+`r TA` played `r cg$cM` close games over the two seasons (a chase still between 25% and 75% at the start of the 18th over) and won `r cg$cW`. In every other game they won `r cg$oW` of `r cg$oM`. They lost only `r sum(sw$blown)` of the `r sum(sw$had_it)` games in which they were at least 75% to win, about the league norm. So the results gap is not a habit of throwing away won games. A good part of it is a handful of coin-flips that landed the wrong way, plus a bowling cell that kept games closer than they needed to be. And clutch performance does not repeat from one season to the next (r = `r f1(P$repeat_bat$r, 2)` for batters).
+
+::: {.panel}
+**H6: <span class="verdict-rejected">rejected</span>.** No evidence that `r TA`'s players come apart under pressure in a way that would repeat. Paying for "clutch" would be paying for last year's luck.
+:::
+
+# Problem B, part 2: what did the franchise do about it?
+
+The diagnosis says what was wrong across two seasons. A franchise, though, did not get two seasons at once. It got 2023, then had to decide, then got 2024. So this section follows the decisions in the order they were made, and asks of each: what did the data say at the time, what did the franchise do, how did it turn out, and what would have been better.
+
+Two rules. Anything labelled **foresight** uses only what was available at the time. Anything labelled **hindsight** uses later results and is there to grade a decision, not to pretend the franchise could have known. And nothing here is causal: a released player doing well elsewhere does not prove he would have done well at home.
+
+```{r fig-timeline}
+#| fig-cap: "The two seasons as a sequence of decisions."
+#| fig-height: 3.4
+#| fig-width: 12
+fig_audit_timeline(A, SCR)
+```
+
+## Step 1: what 2023 said (foresight)
+
+```{r fig-shift}
+#| fig-cap: "The team's cells against the rest of the league, 2023 and 2024."
+#| fig-height: 5
+fig_cells_shift(A)
+```
+
+An analyst looking only at 2023 would have seen two clearly bad cells: **middle-overs spin bowling** (`r s1(A$cells23$per100_2023[1])` per 100 balls) and **batting against spin in the powerplay** (`r s1(A$cells23$per100_2023[A$cells23$label == "Batting: powerplay spin"])`, a small cell of `r A$cells23$balls[A$cells23$label == "Batting: powerplay spin"]` balls over two seasons). The bowling cell was the bigger and more expensive problem.
+
+```{r fig-stake}
+#| fig-cap: "What the middle-overs spin gap cost, each season."
+#| fig-height: 4.6
+#| fig-width: 7.5
+fig_stake(A)
+```
+
+In 2023 the gap cost about `r f1(st$runs_lost[1], 0)` runs against an average spin attack, or `r f1(st$wins_lost[1], 1)` wins, worth about `r rs(st$worth_cr[1])` crore at the going rate. `r TA` finished one win short of the play-offs that season.
+
+Inside the cell, the 2023 picture looked like this:
+
+```{r spin23}
+A$spin23 |> transmute(Player = player, Balls = balls, `Share %` = share, Economy = econ, Wickets = wkts,
+                      `Raw per 100` = per100, `Shrunk per 100` = shrunk_per100) |>
+  tab(caption = sprintf("%s's middle-overs spinners, 2023", TA), digits = 1)
+```
+
+`r A$spin23$player[1]` and `r A$spin23$player[2]` bowled most of the overs, and both were well below par. The evidence for any one bowler is thin (a season is 100 to 150 balls, and the shrinkage model gives a season's record only about a fifth of the weight), but the evidence for the *attack* was clear.
+
+## Step 2: what the franchise did at the December 2023 auction
+
+```{r fig-money-moves}
+#| fig-cap: "Contract value of players released, kept and brought in for 2024, grouped by what they bowl."
+#| fig-height: 3.8
+fig_money_moves(A)
+```
+
+```{r moves-table}
+A$outcomes |> filter(move != "Kept") |>
+  arrange(move, desc(price_cr)) |>
+  transmute(Move = move, Player = player, Role = type, Bowls = coalesce(bowl_kind, "–"),
+            `Price (cr)` = price_cr, `Other team` = coalesce(other_team, "–"),
+            `WAR 2023` = war_2023, `WAR 2024` = war_2024, Note = note) |>
+  tab(caption = "Who left and who arrived, with WAR in each season (any team)", digits = 2)
+```
+
+`r TA` released both of their main spinners from 2023 (`r and_list(A$released_spin$player)`, `r rs(sum(A$released_spin$price_cr))` crore of contracts). Releasing `r A$spin23$player[A$spin23$player %in% A$released_spin$player][1]` was defensible on the numbers: he was the most expensive spinner and the worst of the regulars in the cell. But the replacements were `r and_list(A$outcomes$player[A$outcomes$move == "Arrived" & A$outcomes$bowl_kind %in% "Spin"])`, for `r rs(spin_new)` crore between them, while `r rs(pace_new)` crore of new money went on pace: `r and_list(arr$names[arr$group == "Pace bowlers"])`. The largest single move, the trade for `r A$outcomes$player[which.max(A$outcomes$price_cr * (A$outcomes$move == "Arrived"))]`, was a pace-bowling allrounder.
+
+::: {.panel}
+**On the record of 2023 alone, the auction went the other way from the diagnosis.** The weakness was spin in the middle overs; `r f1(100 * pace_new / (pace_new + spin_new), 0)`% of the new bowling money went on pace.
+:::
+
+## Step 3: how the moves turned out (hindsight)
+
+```{r fig-moves-war}
+#| fig-cap: "2024 WAR against contract value for players released and brought in."
+#| fig-height: 5.6
+fig_moves_war(A)
+```
+
+```{r os-table}
+os |> transmute(Move = move, Players = players, `Played 2024` = played_2024, `Cost (cr)` = cost_cr,
+                `WAR 2023` = war_2023, `WAR 2024` = war_2024, `Value 2024 (cr)` = value_2024_cr,
+                `Cr per WAR 2024` = cr_per_war_2024) |>
+  tab(caption = "Kept, released and arrived: what they cost and what they produced", digits = 2)
+```
+
+Judged as a whole the arrivals did their job: `r f1(os$war_2024[os$move == "Arrived"], 1)` WAR in 2024 against `r f1(os$war_2024[os$move == "Released"], 1)` for the players let go (wherever they played). `r A$outcomes$player[A$outcomes$move == "Arrived"][which.max(A$outcomes$war_2024[A$outcomes$move == "Arrived"])]` was the best of them. But they cost `r rs(os$cr_per_war_2024[os$move == "Arrived"], 2)` crore per WAR against a league rate of `r rs(A$cr24, 2)`, and `r top_buy$player` (`r rs(top_buy$price_cr)` crore), the most expensive buy at the auction itself, produced `r f1(top_buy$war_2024, 1)` WAR. Meanwhile the weak cell did not move:
+
+```{r fig-cell-bowlers}
+#| fig-cap: "The team's middle-overs spinners in each season: share of the work and economy."
+#| fig-height: 4.8
+#| fig-width: 10
+fig_cell_bowlers(A)
+```
+
+In 2024 `r A$spin24$player[1]` bowled `r f1(A$spin24$share[1], 0)`% of the middle-overs spin, at `r f1(A$spin24$econ[1], 2)` an over. The new spinners (`r and_list(A$spin24$player[A$spin24$player %in% A$outcomes$player[A$outcomes$move == "Arrived"]])`) were cheaper but bowled a minority of the overs, and only `r A$spin24$player[which.max(A$spin24$per100 * (A$spin24$balls >= 40))]` was clearly above par, in part-time overs.
+
+## Step 4: what the market offered (foresight and hindsight)
+
+Was there a spinner to buy? The December 2023 auction pool, restricted to players who had bowled middle-overs spin in 2023:
+
+```{r market-pool}
+A$market |> transmute(Player = player, `Status at auction` = status_2024, `Went to` = bought_by,
+                      `Price (cr)` = price_2024, `2023 balls` = balls_2023, `2023 economy` = econ_2023,
+                      `2023 shrunk /100` = shrunk_2023, `2024 balls` = balls_2024, `2024 economy` = econ_2024) |>
+  tab(caption = "Spinners in the December 2023 auction pool with 2023 middle-overs evidence", digits = 2)
+```
+
+The pool was thin. Only `r nrow(A$market)` spinners in it had bowled any middle overs in 2023, and none of them had a long record of doing it well. So "buy a proven spinner at the auction" was not really on offer. The proven middle-overs spinners were all retained by their teams:
+
+```{r fig-spin-market}
+#| fig-cap: "Every regular middle-overs spinner in 2023, against how he did in 2024."
+#| fig-height: 6
+fig_spin_market(A)
+```
+
+```{r picks}
+A$picks |> transmute(Player = player, `2023 team` = abbr(team_2023), `2023 /100` = per100_2023,
+                     `2023 shrunk` = shrunk_2023, `2024 /100` = per100_2024, `2024 balls` = balls_2024,
+                     `Foresight wins` = fore_wins, `Hindsight wins` = hind_wins, `Hindsight cr` = hind_worth_cr) |>
+  tab(caption = sprintf("If each of 2023's best middle-overs spinners had bowled %s's %d middle-overs spin balls in 2024", TA, A$balls_24), digits = 2)
+```
+
+Two readings of that table, and both matter.
+
+**Foresight.** On 2023 evidence alone, the shrinkage model expects any one spinner to be only modestly better than `r TA`'s own (worth about `r f1(max(A$picks$fore_wins), 2)` wins at best). A single season of middle-overs bowling does not separate spinners well; across these bowlers the 2023-to-2024 correlation is close to zero. The lesson for recruitment is to buy on several seasons of evidence, not one.
+
+**Hindsight.** The spinners who did repeat were worth a lot. `r A$picks$player[which.max(A$picks$hind_wins)]` bowling `r TA`'s 2024 middle-overs spin balls at his own 2024 rate would have saved about `r f1(max(A$picks$hind_runs, na.rm = TRUE), 0)` runs, or `r f1(max(A$picks$hind_wins, na.rm = TRUE), 1)` wins (`r rs(max(A$picks$hind_worth_cr, na.rm = TRUE))` crore). Most of the established names would have been worth close to a full win.
+
+None of those players was in the auction. The route to them was a **trade**, the same route `r TA` used for a `r rs(max(A$outcomes$price_cr))` crore pace-bowling allrounder.
+
+## Step 5: inside 2024, did the season turn on the weak cell?
+
+```{r fig-early-late}
+#| fig-cap: "Runs above average per 100 balls by phase, first seven league games against the last seven, 2024."
+#| fig-height: 4.4
+#| fig-width: 10
+fig_early_late(A)
+```
+
+```{r el-table}
+el |> transmute(Half = half, Played = M, Won = W, `Batting r/o` = rr_for, `Conceded r/o` = rr_against,
+                `Powerplay wickets` = pp_wickets, `Mid-overs spin balls` = mid_spin_balls,
+                `Mid-overs spin economy` = mid_spin_econ, `Mid-overs spin /100` = mid_spin_per100) |>
+  tab(caption = "2024 league stage, first and second halves", digits = 2)
+```
+
+The 2024 season turned sharply: `r el$W[1]` win from `r el$M[1]`, then `r el$W[2]` from `r el$M[2]`. (This repeats the earlier `r TA`-only review, from this pipeline's tables; the numbers agree closely, with small differences from how extras are counted.) Batting went from `r f1(el$rr_for[1], 2)` to `r f1(el$rr_for[2], 2)` an over and the powerplay wickets from `r el$pp_wickets[1]` to `r el$pp_wickets[2]`. The new-ball attack, built from the auction's pace money, is the biggest single change. Middle-overs spin got a bit cheaper (`r f1(el$mid_spin_econ[1], 2)` to `r f1(el$mid_spin_econ[2], 2)`) but stayed well below par.
+
+::: {.panel}
+**H7: <span class="verdict-supported">supported</span>.** The auction did not address what 2023 had shown: `r rs(pace_new)` crore of new money on pace, `r rs(spin_new)` crore on spin, and the cell was `r s1(cl$per100_2023)` and then `r s1(cl$per100_2024)`.
+
+**H8: <span class="verdict-supported">supported</span>.** The turnaround came from the powerplay (with bat and ball) and from the batting, not from the weak cell.
+:::
+
+## What they should ideally have done
+
+Putting the steps together, with the hindsight label where it belongs:
+
+```{r ideal}
+tribble(
+  ~Decision, ~`What happened`, ~`What the data supported`, ~`Value at stake`,
+  "Read of 2023", "The weakness was visible", "Middle-overs spin is the problem; everything else is mostly the ground",
+    sprintf("%s runs, %s wins, %s cr in 2023", f1(st$runs_lost[1], 0), f1(st$wins_lost[1], 1), rs(st$worth_cr[1])),
+  "Release the 2023 spinners", "Both released", "Defensible: both were below par in the cell", "–",
+  "Use of new money", sprintf("%s cr on pace, %s cr on spin", rs(pace_new), rs(spin_new)), "Put a real share into one proven middle-overs spinner", "–",
+  "Route to the player", "Trade used for a pace allrounder", "The proven spinners were all retained: trade for one (hindsight)",
+    sprintf("about %s wins in 2024 for an established spinner", f1(median(A$picks$hind_wins, na.rm = TRUE), 1)),
+  "Deployment in 2024", sprintf("%s bowled %s%% of the spin overs", A$spin24$player[1], f1(A$spin24$share[1], 0)),
+    sprintf("More overs for %s, fewer for the bottom of the list", and_list(good$player)), sprintf("about %s wins (free)", f1(optA, 2)),
+  "What 2024 left", "Still the worst spin cell in the league", "Fix it at the next auction",
+    sprintf("%s runs, %s wins, %s cr in 2024", f1(st$runs_lost[2], 0), f1(st$wins_lost[2], 1), rs(st$worth_cr[2]))
+) |> tab(caption = "The decision audit in one table")
+```
+
+The cleanest way to put it: the franchise correctly spotted that its bowling needed work and spent heavily on it. The money bought a much better new-ball attack, and that was a big part of the 2024 recovery. But the specific, repeated, expensive hole in the middle overs was left as it was, two seasons running.
+
+# Problem B, part 3: what next
+
+## The options
+
+The diagnosis points at one archetype, a middle-overs spinner who controls runs, and one deployment habit. The options follow the order in which a franchise can act: what is free, what costs money, and what to stop doing.
+
+**Two ways to count the prize.** The measured cost of the problem is about `r f1(mean(st$wins_lost), 1)` wins a season. That describes the past. What a franchise can expect to *recover* is smaller, because the players responsible would be expected to drift back towards average anyway. Projected on shrunk estimates, the current middle-overs spinners would run at about `r s1(O$r_now)` per 100 balls next season. The decision is made on the smaller number.
+
+```{r fig-impact}
+#| fig-cap: "Simulated wins added per season for each option, on shrunk projections."
+#| fig-height: 3.8
+fig_impact(RC$sims)
+```
+
+```{r tbl-impact}
+sim |> arrange(desc(option)) |>
+  transmute(Option = option, `Expected wins / season` = mean, `5th pct` = lo, `95th pct` = hi, `P(gain > 0)` = p_pos) |>
+  tab(caption = sprintf("Projected effect per season. A spinner bowls three middle overs a match (%d balls a season); redeployment moves 120 balls.", O$spinner_balls), digits = 2)
+```
+
+On shrunk projections a top-quartile Indian spinner is worth `r f1(optC, 2)` wins a season with a `r f1(100 * sim$p_pos[grepl("^C", sim$option)], 0)`% chance of being positive, and the best spinner in the league about `r f1(optD, 2)`. If the last two seasons' gap simply repeated, the top-quartile spinner would be worth about `r f1(O$hist_upper, 1)` wins. These are modest numbers and I would rather say so. Two things make them matter: the margins (`r TA` missed the 2023 play-offs by one win and made 2024's on net run rate), and the price (the archetype is in the cheapest part of the market).
+
+## Recommendation 1: redeploy now, for free
+
+Give the middle overs to the bowlers who are good at them, within the four-over cap: more for `r and_list(good$player)`, fewer for the spinners at the bottom of the league list in this phase. It is limited because those bowlers have other jobs, so it cannot be the whole answer.
+
+## Recommendation 2: buy one Indian middle-overs spinner, on several seasons of evidence
+
+```{r shortlist}
+O$shortlist |> head(10) |>
+  transmute(Player = player, `Team` = abbr(main_team), `Mid-overs balls` = balls,
+            `Shrunk /100` = shrunk_per100, `Latest price (cr)` = price_cr, `Projected wins` = proj_wins) |>
+  tab(caption = "Indian spinners above the league median in the middle overs, both seasons pooled: the target archetype")
+```
+
+Indian rather than overseas, because overseas players carry a large price premium and each overseas slot spent on a spinner is a slot not available for the batting that drives this team's WAR. This is a list of the archetype, not a shopping list. The right use of it is to set a ceiling price per player from projected wins at about `r rs(mean(rate$cr_per_war), 1)` crore per WAR, and stop bidding there. If the auction pool is thin again, as it was in December 2023, the trade window is the route.
+
+## Recommendation 3: who to build around
+
+```{r fig-retention}
+#| fig-cap: "2024 WAR against contract value for the squad."
+#| fig-height: 5.6
+fig_retention(RC$retention)
+```
+
+```{r retention}
+RC$retention |> filter(price_cr > 0) |>
+  transmute(Player = player, Role = role_sheet, `Price (cr)` = price_cr, `WAR 2024` = war_total,
+            `WAR 2 seasons` = war_2yr, `Surplus (cr)` = surplus_cr, Call = call) |>
+  tab(caption = "Retention view after 2024: a starting point for a conversation, not a release list", digits = 2)
+```
+
+The core that carried 2024 (`r and_list(RC$retention$player[RC$retention$call == "Core: build around"])`) came cheaply relative to what they produced. The two contracts that cost far more than they returned in 2024 were `r and_list(RC$retention$player[RC$retention$call == "Review: price well above return"])`. One season of WAR is noisy, so the two-season column sits next to it.
+
+## What not to do
+
+- **Don't buy "bowling" in general.** Powerplay and death bowling were above average once the ground was accounted for, and the 2024 pace signings made the new ball even stronger. Another expensive overseas fast bowler addresses a problem that is mostly `r HOME`.
+- **Don't pay for clutch.** It doesn't repeat (r = `r f1(P$repeat_bat$r, 2)` for batters, `r f1(P$repeat_bowl$r, 2)` for bowlers).
+- **Don't recruit spinners on one season.** A single season of middle-overs bowling is a weak guide to the next.
+- **Don't judge bowlers on raw economy at home.** Use venue-adjusted numbers in contract talks.
+
+# The decision
+
+::: {.panel .focus}
+**Decision.** At the next auction, `r TEAM` should spend on **one Indian specialist spinner whose shrunk middle-overs rate is in the league's top quarter over more than one season**, with a bid ceiling set from projected wins at the league's going rate, and should **move middle overs to its existing positive options from the next match**. It should not spend its overseas slots or its largest bids on more pace bowling or on players sold as finishers.
+
+**What it is worth.** About `r f1(optC + optA, 1)` wins a season on conservative, shrunk projections, and up to about `r f1(O$hist_upper, 1)` if the past two seasons' gap persisted. In 2023 one more win was the difference between missing the play-offs and making them.
+
+**What would change my mind.** If a third season showed middle-overs spin back near average with the same bowlers, the two-season pattern was noise and the money should go elsewhere. If ball-tracking showed the spin problem was specific to `r HOME`'s short square boundaries in a way the venue factor misses, the answer would shift towards a different *type* of spinner rather than a better one.
+:::
+
+**How to monitor it.** Three numbers, every five matches: middle-overs spin runs above average per 100 balls (target: at least the league median); the share of middle-overs balls going to bowlers with positive shrunk rates (target: more than half); and cost per WAR against the league rate at season end.
+
+## Summary of verdicts
+
+```{r verdicts}
+verd <- c("Supported", "Partly supported", "Supported", "Supported for bowling overall",
+          "Supported (2023), weaker (2024)", "Rejected", "Supported", "Supported")
+team_hypotheses(TA) |> select(ID = id, Hypothesis = hypothesis) |>
+  mutate(Verdict = verd, `Key evidence` = RC$evidence$evidence) |>
+  tab(caption = sprintf("Problem B: verdicts for %s", TA))
+```
+
+# Epilogue: what actually happened next
+
+The data stop in May 2024, and nothing below was used in the analysis. At the November 2024 mega auction `r TEAM` bought two spinners: **Krunal Pandya** for ₹5.75 crore and **Suyash Sharma** for ₹2.6 crore ([Sportskeeda](https://sportskeeda.com/cricket/news-rcb-squad-ipl-2025-complete-royal-challengers-bengaluru-player-list-prices-inr-ipl-2025-auction); [Onmanorama](https://onmanorama.com/sports/cricket/2024/11/25/ipl-2025-mega-auction-day-two.amp.html)). Krunal Pandya is `r ordinal(which(O$shortlist$player == "Krunal Pandya"))` on the shortlist above, and Suyash Sharma is on the 2023 list of regular middle-overs spinners. `r TA` won the 2025 title, beating Punjab by six runs in the final, and Krunal Pandya was player of the match with 2 for 17 from his four overs ([cricket.com](https://www.cricket.com/news/ipl-2025-final-krunal-pandya-becomes-first-player-to-win-player-of-the-match-in-ipl-final-twice-rcb-vs-pbks-632025-1748976162751)).
+
+One outcome proves nothing on its own, and many things changed in a mega-auction year. But it is reassuring that the archetype this analysis points to, from two seasons of ball-by-ball data, is the one a real recruitment team went looking for a season later.
+
+# Limitations
+
+- **Two seasons is not much.** Player estimates are heavily shrunk, and the gate-1 result for every team is uncertain under resampling.
+- **Auction prices are incomplete.** Some replacement signings are not on the auction sheets and are left unpriced; trades are priced at the sheet value.
+- **The audit is not causal.** "Released player X did well elsewhere" mixes his skill with a new team, role and ground.
+- **The foresight market is thin.** Only a handful of auction-pool spinners had 2023 middle-overs evidence, so foresight comparisons rest on small samples.
+- **WAR is a description,** at a stated replacement level and runs-per-win rate. Other defensible choices would move the levels, not much the rankings.
+
+# References {.unnumbered}
+
+- Bandyopadhyay, R. *Runs Above Expected (RAE) and Wicket Effect (WE).* arXiv:2608.18020.
+- Benjamini, Y. and Hochberg, Y. (1995). Controlling the false discovery rate. *JRSS B* 57(1).
+- Date, K. *A Cricketing View* (blog), on set batters and ball-by-ball expectation.
+- Desai, A. DPL 2026 mentor session: statistical modelling, problem framing and pitfalls.
+- Ganjoo, H. *T20 Basics.* hganjoo.github.io/t20basics.
+- Gupta, S. DPL 2026 mentor session: sports psychology and the PACE framework.
+- Malhotra, G. (2022). Predicting auction prices and economic value creation of cricketers in the IPL. *Journal of Sports Analytics* 8(3).
+- Nielsen, T. *Cricket Sims* (Substack), on the stability of T20 metrics.
+- Rafique, H. (2022). cricWAR: a reproducible system for evaluating player performance in limited-overs cricket. CMU Sports Analytics Conference.
+- Walunj, O. DPL 2026 mentor session: game state, entry points, roles and squad strategy.
+- Weston, D. *IPL Auctions: Market Dynamics* (Substack).
+- Epilogue sources: Sportskeeda (RCB 2025 squad and prices); Onmanorama (mega auction day two); cricket.com (2025 final report).

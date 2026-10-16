@@ -1,0 +1,25 @@
+# OS and editor
+.DS_Store
+Thumbs.db
+.Rhistory
+.RData
+.Rproj.user/
+.Rapp.history
+# Quarto / knitr / LaTeX scratch
+.quarto/
+*_files/
+*.knit.md
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.part.mp4
+
+# Only this run's submission folder goes in the repository.
+/_not_in_this_run/
+/Ext/
+# The organisers' input files stay local (see 01-team-diagnostics/data/raw/README.md).
+*/data/raw/*
+!*/data/raw/README.md
+01-team-diagnostics/slides/DPL_2026_Submission_Template.pptx

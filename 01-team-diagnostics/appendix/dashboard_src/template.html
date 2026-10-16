@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Diagnostics Explorer</title>
+<style>
+:root{--navy:#1B2A4A;--red:#C8102E;--blue:#1D4E89;--spin:#E07A1F;--green:#1B9E77;--ink:#1B1F2A;--muted:#6B7280;--line:#E5E7EB;--bg:#F7F7F5;--card:#fff}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--navy);color:#fff;padding:18px 24px}header h1{margin:0;font-size:22px}header p{margin:4px 0 0;color:#cfd6e4;font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:10px 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{border:1px solid var(--line);background:#fff;padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13px;color:var(--ink)}
+nav button.on{background:var(--red);border-color:var(--red);color:#fff}
+main{padding:18px 24px;max-width:1280px;margin:0 auto}section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:17px;color:var(--navy)}.card p.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:12px}.kpi b{font-size:24px;display:block;color:var(--navy)}.kpi span{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:#fafafa;cursor:pointer;color:var(--muted);font-weight:600}td:first-child,th:first-child{text-align:left}
+tr.focus td{color:var(--red);font-weight:700}
+.tw{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.ctrl{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center}.ctrl input,.ctrl select{padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.pass{color:#fff;background:var(--green);padding:1px 8px;border-radius:999px;font-size:11px}.fail{color:#fff;background:#B6B8BA;padding:1px 8px;border-radius:999px;font-size:11px}
+canvas{max-height:400px}
+footer{color:var(--muted);font-size:12px;padding:10px 24px 30px;text-align:center}
+@media (max-width:600px){.grid{grid-template-columns:1fr}main,nav,header{padding-left:12px;padding-right:12px}}
+</style>
+</head>
+<body>
+<header><h1>Team Diagnostics Explorer</h1><p>Appendix to "Finding the leak" (Faizan Khan, DPL 2026, Question 1). Every number comes from the R pipeline in this repository.</p></header>
+<nav id="nav"></nav>
+<main>
+<section id="overview"></section>
+<section id="screen"></section>
+<section id="league"></section>
+<section id="players"></section>
+<section id="spin"></section>
+<section id="audit"></section>
+</main>
+<footer>Data: DPL 2026 ball-by-ball file (IPL 2023-24) and the organisers' auction sheets. Intervals are 95% match-bootstrap. Built <span id="built"></span>, seed <span id="seed"></span>.</footer>
+<script>
+/*CHARTJS*/
+</script>
+<script>
+/*DATA*/
+</script>
+<script>
+const RED='#C8102E',BLUE='#1D4E89',GREY='#B6B8BA',SPIN='#E07A1F',GREEN='#1B9E77',TA=DATA.meta.abbr;
+const tabs=[['overview','Overview'],['screen','Team screen'],['league','League'],['players','Players'],['spin','Middle-overs spin'],['audit','Decision audit']];
+const nav=document.getElementById('nav');
+tabs.forEach(([id,l])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>show(id);b.id='b_'+id;nav.appendChild(b);});
+function show(id){tabs.forEach(([t])=>{document.getElementById(t).classList.toggle('on',t===id);document.getElementById('b_'+t).classList.toggle('on',t===id);});try{localStorage.setItem('t1tab',id)}catch(e){}}
+document.getElementById('built').textContent=DATA.meta.built;document.getElementById('seed').textContent=DATA.meta.seed;
+const f=(x,d=2)=>x==null?'':(+x).toFixed(d);const sg=(x,d=1)=>x==null?'':(x>0?'+':'')+(+x).toFixed(d);
+const yn=v=>v?'<span class="pass">pass</span>':'<span class="fail">no</span>';
+function table(el,rows,cols,focus){let sortKey=null,asc=false;
+ function draw(){let r=[...rows];if(sortKey){r.sort((a,b)=>{let x=a[sortKey],y=b[sortKey];if(typeof x==='string')return asc?x.localeCompare(y):y.localeCompare(x);return asc?x-y:y-x;});}
+  el.innerHTML='<div class="tw"><table><thead><tr>'+cols.map(c=>`<th data-k="${c[0]}">${c[1]}</th>`).join('')+'</tr></thead><tbody>'+
+  r.map(o=>`<tr class="${focus&&focus(o)?'focus':''}">`+cols.map(c=>`<td>${c[2]?c[2](o[c[0]],o):o[c[0]]??''}</td>`).join('')+'</tr>').join('')+'</tbody></table></div>';
+  el.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;asc=sortKey===k?!asc:false;sortKey=k;draw();});}
+ draw();}
+
+// ---------- overview
+(function(){const s=document.getElementById('overview');const K=DATA.kpi;const c=K.cell[0]||K.cell;
+ const pace=(K.money.find(r=>r.group==='Pace bowlers')||{}).cr,spin=(K.money.find(r=>r.group==='Spin bowlers')||{}).cr;
+ s.innerHTML=`<div class="kpis"><div class="kpi"><b>${K.pass} of 10</b><span>teams passing all three gates: ${TA}</span></div>
+ <div class="kpi"><b>${sg(c.per100)}</b><span>${c.label}, runs per 100 balls vs the rest (${sg(c.y23)} in 2023, ${sg(c.y24)} in 2024)</span></div>
+ <div class="kpi"><b>${K.stake.map(r=>f(r.wins,1)).join(' / ')}</b><span>wins the gap cost in 2023 / 2024 (${K.stake.map(r=>r.runs).join(' / ')} runs)</span></div>
+ <div class="kpi"><b>₹${f(pace,1)} : ₹${f(spin,1)} cr</b><span>new auction money for 2024, pace : spin</span></div></div>
+ <div class="card"><h2>The three gates for every team</h2><p class="sub">G1: below Pythagorean expectation in both seasons. G2: a cell clears BH q &lt; 0.10, ground fixed effects and replication. G3: negative surplus over two seasons. Click a column to sort.</p><div id="gt"></div></div>`;
+ table(document.getElementById('gt'),DATA.gates,[['abbr','Team'],['gap23','Gap 2023',v=>sg(v)],['gap24','Gap 2024',v=>sg(v)],['pboth','P(both below) %'],['G1','G1',yn],['cell','Strongest cell'],['per100','Per 100',v=>sg(v)],['hurdles','Hurdles'],['G2','G2',yn],['surplus','Surplus (cr)',v=>sg(v)],['G3','G3',yn],['gates','Gates']],o=>o.abbr===TA);})();
+
+// ---------- screen
+(function(){const s=document.getElementById('screen');
+ s.innerHTML='<div class="card"><h2>The cell scan</h2><p class="sub">Runs above the rest of the league per 100 balls, team\'s view, ground and game state held fixed. Filter by team or discipline.</p><div class="ctrl"><select id="ct"><option value="">All teams</option></select><select id="cd"><option value="">Batting + bowling</option><option>Batting</option><option>Bowling</option></select><label><input type="checkbox" id="c2"> 2+ hurdles only</label></div><div id="ctab"></div></div><div class="card"><h2>Every team on every dimension</h2><p class="sub">Rank 1 = best in the league. Choose a team.</p><div class="ctrl"><select id="st"></select></div><canvas id="scc"></canvas></div>';
+ const ct=document.getElementById('ct'),st=document.getElementById('st');[...new Set(DATA.cells.map(r=>r.team))].sort().forEach(t=>{ct.innerHTML+=`<option>${t}</option>`;st.innerHTML+=`<option ${t===TA?'selected':''}>${t}</option>`;});
+ const draw=()=>{const rows=DATA.cells.filter(r=>(!ct.value||r.team===ct.value)&&(!document.getElementById('cd').value||r.discipline===document.getElementById('cd').value)&&(!document.getElementById('c2').checked||r.hurdles>=2));
+  table(document.getElementById('ctab'),rows.sort((a,b)=>a.per100-b.per100),[['team','Team'],['discipline','Discipline'],['phase','Phase'],['kind','Bowler'],['balls','Balls'],['per100','Per 100',v=>sg(v)],['lo','CI low',v=>sg(v)],['hi','CI high',v=>sg(v)],['q','BH q',v=>f(v,3)],['ground','Ground FE',v=>sg(v)],['y23','2023',v=>sg(v)],['y24','2024',v=>sg(v)],['hurdles','Hurdles']],o=>o.hurdles===3);};
+ ['ct','cd','c2'].forEach(i=>document.getElementById(i).addEventListener('input',draw));draw();
+ let ch;const drawS=()=>{const rows=DATA.scorecard.filter(r=>r.abbr===st.value);if(ch)ch.destroy();
+  ch=new Chart(document.getElementById('scc'),{type:'bar',data:{labels:rows.map(r=>r.label),datasets:[{label:'League rank (1 = best)',data:rows.map(r=>11-r.rank),backgroundColor:rows.map(r=>r.rank<=3?GREEN:r.rank>=8?RED:GREY)}]},
+   options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return `rank ${r.rank}, value ${r.value}`}}}},scales:{x:{min:0,max:10,ticks:{callback:v=>11-v},title:{display:true,text:'League rank'}}}}});};
+ st.onchange=drawS;drawS();})();
+
+// ---------- league
+(function(){const s=document.getElementById('league');
+ s.innerHTML='<div class="grid"><div class="card"><h2>Runs per over by over</h2><div class="ctrl"><select id="li"><option value="1">Batting first</option><option value="2">Chasing</option></select></div><canvas id="loc"></canvas></div><div class="card"><h2>What goes with winning</h2><p class="sub">Correlation with win %, 20 team-seasons, each rate centred within season</p><canvas id="lwc"></canvas></div></div><div class="card"><h2>Grounds</h2><div id="lvt"></div></div>';
+ let oc;const drawO=()=>{const i=+document.getElementById('li').value;const d=y=>DATA.overs.filter(r=>r.inns==i&&r.season==y).sort((a,b)=>a.over-b.over);
+  if(oc)oc.destroy();oc=new Chart(document.getElementById('loc'),{type:'line',data:{labels:d('2023').map(r=>r.over),datasets:[{label:'2023',data:d('2023').map(r=>r.rr),borderColor:'#8FB3DA',backgroundColor:'#8FB3DA'},{label:'2024',data:d('2024').map(r=>r.rr),borderColor:BLUE,backgroundColor:BLUE}]},options:{scales:{y:{title:{display:true,text:'Runs per over'}},x:{title:{display:true,text:'Over'}}}}});};
+ document.getElementById('li').onchange=drawO;drawO();
+ const w=[...DATA.wincor].sort((a,b)=>b.r-a.r);
+ new Chart(document.getElementById('lwc'),{type:'bar',data:{labels:w.map(r=>r.metric),datasets:[{data:w.map(r=>r.r),backgroundColor:w.map(r=>r.metric.startsWith('Batting')?BLUE:SPIN)}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+ table(document.getElementById('lvt'),DATA.venues,[['venue','Ground'],['matches','Matches'],['rr','Runs/over',v=>f(v)],['pace','Pace econ',v=>f(v)],['spin','Spin econ',v=>f(v)],['first','1st-inns mean'],['chase','Chase win %']]);})();
+
+// ---------- players
+(function(){const s=document.getElementById('players');
+ s.innerHTML='<div class="card"><h2>Player value, every player-season</h2><p class="sub">WAR = wins above replacement. Price from the auction sheet where available.</p><div class="ctrl"><select id="pt"><option value="">All teams</option></select><select id="ps"><option value="">Both seasons</option><option>2023</option><option>2024</option></select><input id="pq" placeholder="Search player"></div><div id="ptab"></div></div>';
+ const pt=document.getElementById('pt');[...new Set(DATA.players.map(r=>r.team))].sort().forEach(t=>pt.innerHTML+=`<option ${t===TA?'selected':''}>${t}</option>`);
+ const draw=()=>{const q=document.getElementById('pq').value.toLowerCase(),se=document.getElementById('ps').value;
+  const rows=DATA.players.filter(r=>(!pt.value||r.team===pt.value)&&(!se||String(r.season)===se)&&(!q||r.player.toLowerCase().includes(q)));
+  table(document.getElementById('ptab'),rows.sort((a,b)=>b.war-a.war),[['player','Player'],['season','Season'],['team','Team'],['bat','Balls bat'],['bowl','Balls bowl'],['war_bat','Bat WAR',v=>f(v)],['war_bowl','Bowl WAR',v=>f(v)],['war','WAR',v=>f(v)],['price','Price (cr)',v=>f(v)]]);};
+ ['pt','ps','pq'].forEach(i=>document.getElementById(i).addEventListener('input',draw));draw();})();
+
+// ---------- spin
+(function(){const s=document.getElementById('spin');
+ s.innerHTML='<div class="card"><h2>Middle-overs spinners: value against price</h2><p class="sub">Shrunk runs above expected per 100 balls in the middle overs (both seasons, 60+ balls) against latest contract. Hover for the player.</p><canvas id="spc"></canvas></div><div class="card"><h2>Table</h2><div id="spt"></div></div>';
+ const pts=(fn)=>DATA.spinners.filter(r=>r.price!=null&&fn(r)).map(r=>({x:r.price,y:r.shrunk,n:r.player,t:r.team}));
+ new Chart(document.getElementById('spc'),{type:'scatter',data:{datasets:[{label:TA,data:pts(r=>r.team===TA),backgroundColor:RED,pointRadius:6},{label:'Indian',data:pts(r=>r.team!==TA&&!r.overseas),backgroundColor:BLUE},{label:'Overseas',data:pts(r=>r.team!==TA&&r.overseas),backgroundColor:SPIN}]},
+  options:{scales:{x:{type:'logarithmic',title:{display:true,text:'Latest contract, INR crore (log)'}},y:{title:{display:true,text:'Shrunk runs above expected / 100 balls'}}},plugins:{tooltip:{callbacks:{label:c=>`${c.raw.n} (${c.raw.t}): ${c.raw.x} cr, ${c.raw.y}`}}}}});
+ table(document.getElementById('spt'),[...DATA.spinners].sort((a,b)=>b.shrunk-a.shrunk),[['player','Player'],['team','Team'],['balls','Balls'],['raw','Raw /100',v=>sg(v)],['shrunk','Shrunk /100',v=>sg(v)],['price','Price (cr)',v=>f(v)],['overseas','Overseas',v=>v?'yes':'']],o=>o.team===TA);})();
+
+// ---------- audit
+(function(){const s=document.getElementById('audit');
+ s.innerHTML='<div class="grid"><div class="card"><h2>Inside 2024: first seven games against the last seven</h2><canvas id="ahc"></canvas><div id="aht"></div></div><div class="card"><h2>What each option is worth</h2><p class="sub">Simulated wins per season on shrunk projections</p><canvas id="aoc"></canvas></div></div><div class="card"><h2>Kept, released and arrived</h2><div class="ctrl"><select id="am"><option value="">All moves</option><option>Kept</option><option>Released</option><option>Arrived</option></select></div><div id="amt"></div></div><div class="card"><h2>Retention view after 2024</h2><div id="art"></div></div>';
+ const ph=['PP','MID','DTH'],lab=[];const v=h=>{const out=[];['Batting','Bowling'].forEach(sd=>ph.forEach(p=>{const r=DATA.phases.find(x=>x.half===h&&x.side===sd&&x.phase===p);out.push(r?r.per100:null);}));return out;};
+ ['Batting','Bowling'].forEach(sd=>ph.forEach(p=>lab.push(sd+' '+p)));const halves=[...new Set(DATA.phases.map(r=>r.half))];
+ new Chart(document.getElementById('ahc'),{type:'bar',data:{labels:lab,datasets:[{label:halves[0],data:v(halves[0]),backgroundColor:GREY},{label:halves[1],data:v(halves[1]),backgroundColor:RED}]},options:{scales:{y:{title:{display:true,text:'Runs above average / 100 balls'}}}}});
+ table(document.getElementById('aht'),DATA.halves,[['half','Half'],['M','Played'],['W','Won'],['rr_for','Bat r/o',v=>f(v)],['rr_against','Conceded r/o',v=>f(v)],['pp_wkts','PP wickets'],['ms_econ','Mid-overs spin econ',v=>f(v)]]);
+ const o=[...DATA.options].reverse();
+ new Chart(document.getElementById('aoc'),{type:'bar',data:{labels:o.map(r=>r.option),datasets:[{label:'Expected wins',data:o.map(r=>r.mean),backgroundColor:BLUE},{label:'5th pct',data:o.map(r=>r.lo),backgroundColor:'#8FB3DA'},{label:'95th pct',data:o.map(r=>r.hi),backgroundColor:'#0C2B4D'}]},options:{indexAxis:'y'}});
+ const am=document.getElementById('am');const drawM=()=>table(document.getElementById('amt'),DATA.moves.filter(r=>!am.value||r.move===am.value),[['move','Move'],['player','Player'],['type','Role'],['bowls','Bowls'],['price','Price (cr)',v=>f(v)],['other','Other team'],['war23','WAR 2023',v=>f(v)],['war24','WAR 2024',v=>f(v)],['note','Note']]);am.onchange=drawM;drawM();
+ table(document.getElementById('art'),DATA.retention,[['player','Player'],['role','Role'],['price','Price (cr)',v=>f(v)],['war','WAR 2024',v=>f(v)],['war2','WAR 2 seasons',v=>f(v)],['surplus','Surplus (cr)',v=>sg(v)],['call','Call']]);})();
+
+let start='overview';try{start=localStorage.getItem('t1tab')||'overview'}catch(e){}
+show(tabs.some(t=>t[0]===start)?start:'overview');
+</script>
+</body>
+</html>

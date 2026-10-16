@@ -1,0 +1,411 @@
+---
+title: "Reading the league"
+subtitle: "Part 1 of 3 · An exploratory look at two IPL seasons, ball by ball, before choosing a team"
+author: "Faizan Khan"
+date: last-modified
+date-format: "D MMMM YYYY"
+abstract: |
+  Data Premier League 2026, preliminary round, Task 1. This is the first of three linked documents. Before deciding which franchise to study, I wanted to understand what is in the data, what is wrong with it, and how the league actually plays: by over, by phase, by ground, by bowler type, by shot and by price. The findings here set the questions that Part 2 answers. Part 3 is the player-level appendix.
+format:
+  html:
+    theme: cosmo
+    css: report.css
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    toc-title: "Contents"
+    number-sections: true
+    code-fold: true
+    code-summary: "Show the R"
+    embed-resources: true
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    smooth-scroll: true
+    anchor-sections: true
+    html-math-method: mathml
+execute:
+  echo: true
+  warning: false
+  message: false
+knitr:
+  opts_knit:
+    root.dir: ".."
+  opts_chunk:
+    fig.width: 9
+    fig.height: 5.2
+    dpi: 150
+    fig.align: center
+    out.width: "100%"
+---
+
+```{r setup}
+#| include: false
+source("report/_common.R")
+```
+
+::: {.panel .focus}
+**Where this fits.** Part 1 (this document) is the league-wide exploration. [Part 2](02_team_review.html) frames the task, chooses the franchise with a screen that every team goes through, and then audits that franchise's decisions. [Part 3](03_player_appendix.html) holds the player-level detail and the method notes.
+
+**What I took away from this part, in one paragraph.** Scoring rose by `r f1(E$season$run_rate[2] - E$season$run_rate[1], 2)` runs an over between the seasons, and the rise was not even: the powerplay and the death overs went up a lot, the middle overs much less. The middle overs are where spin does its work, and spin is the cheaper option there in both seasons. When I lined up every team-season against its win percentage, the single habit most closely tied to winning was **taking wickets in the middle overs** (r = `r f1(E$win_correlates$r[1], 2)`). Grounds differ by almost two runs an over, so any team comparison has to hold the venue fixed. And at the auction, every squad costs roughly the same; what differs is how much of the money is new. Those five observations shape everything in Part 2.
+:::
+
+# What arrived
+
+## The inventory
+
+```{r inventory}
+E$inventory |> rename(Measure = measure, Value = value) |>
+  tab(caption = "What is in the delivery file")
+```
+
+The file covers every delivery of the `r AUD$n_matches` matches in the 2023 and 2024 seasons: `r n0(AUD$rows)` rows (wides and no-balls included) and `r AUD$cols` columns. The auction workbook adds the squad sheets for both seasons, with retentions, purchases, trades and the players who went unsold.
+
+## What was wrong with it
+
+Most of the cleaning was routine. Five issues were not, and each would have quietly bent a model downstream if I had trusted the column names:
+
+```{r dq-table}
+cc <- CHK$clean
+tribble(
+  ~Issue, ~`What I found`, ~`What I did`,
+  "`bat_out` is not a dismissal flag",
+    sprintf("TRUE on %s rows (%.1f%%). There are only %s striker dismissals.", n0(AUD$bat_out_true), AUD$bat_out_pct, n0(AUD$striker_dismissals)),
+    "Rebuilt dismissals from the dismissal text and the dismissed player.",
+  "Retired hurt is not a wicket",
+    sprintf("%d retirements: 'retired not out' (can resume) and 'retired out' (a dismissal).", AUD$retired_rows),
+    "Split the two. Innings wickets now match the scorecard exactly.",
+  "Score and bowler-runs columns",
+    sprintf("%d rows where `score` disagreed with its parts; bowler runs could be negative.", AUD$score_rows_bad),
+    "Recomputed both from runs, extras and extra type.",
+  "Wagon-wheel zones are undocumented",
+    "The zone numbering is the vendor's own.",
+    sprintf("Decoded the field orientation from shot labels (%.1f%% agreement); left-handers mirrored so every chart is from the batter's view.", cc$wagon_agreement_pct),
+  "Vendor model outputs sit in the data",
+    "`predscore` and `wprob` are the vendor's predictions, not observations.",
+    "Kept out of every model; used only as benchmarks."
+) |> tab(caption = "Data issues that mattered")
+```
+
+After cleaning, innings runs and wickets reconcile with the scorecard on every innings. The bigger fix is about *time*. Every running column the vendor supplies (score, wickets, required rate) is measured after the ball. A model that uses them to explain the ball has been handed the answer. So the match state is rebuilt as it stood *before* each delivery, checked by adding the ball back, and a guard function in `R/03_features.R` stops any model that is given a post-ball column. That is Amol Desai's leakage question from the mentor session, made mechanical: could I have known this when the bowler ran in?
+
+## How complete the tracking fields are
+
+```{r fig-coverage}
+#| fig-cap: "Share of deliveries with each tracking field filled in, by season."
+#| fig-height: 4.6
+fig_eda_coverage(E)
+```
+
+Line, length and shot are filled on more than 99% of balls; speed and release point on about 93%. Just as important, the coverage barely moves between seasons (the largest change is `r f1(max(abs(E$coverage$drift)), 1)` points). If a field had been recorded much more often in one year, a "change" in that field would partly be a change in recording. Here that worry can be set aside. One field cannot: `bowl_type` changes meaning between seasons, so bowler type is taken from the bowling-style column instead.
+
+# How a T20 innings is shaped
+
+## Over by over
+
+```{r fig-by-over}
+#| fig-cap: "League runs per over (top) and wickets per 100 legal balls (bottom), by over, innings and season."
+#| fig-height: 7
+fig_eda_by_over(E)
+```
+
+The innings has the shape every follower of the game knows: a fast start once the field opens up, a dip in overs 7 to 10 when the fielders go back and spin comes on, then a steady climb to the death. Wickets follow a similar curve, rising sharply in the last three overs, when batters swing at everything.
+
+What changed in 2024 is the level, not the shape. The league scored `r f1(E$season$run_rate[1], 2)` an over in 2023 and `r f1(E$season$run_rate[2], 2)` in 2024. The biggest jump is in the chase powerplay, where teams were clearly more willing to go hard from ball one. 2024 was the first full season with the impact-player rule, which gives every side an extra batter, and the numbers look exactly like that: more risk at the top, because there is more batting behind.
+
+::: {.panel}
+**What this means for the analysis.** Any model that pools the two seasons without a season term will rate every 2024 batter above average and every 2024 bowler below, which is a statement about the rules rather than the players. Every comparison in Part 2 is made within season.
+:::
+
+## By phase
+
+```{r fig-phase}
+#| fig-cap: "League profile by phase: runs per over, wickets per over, boundary percentage and dot-ball percentage."
+#| fig-height: 4.6
+#| fig-width: 11
+fig_eda_phase(E)
+```
+
+```{r phase-numbers}
+#| include: false
+ph <- E$phase |> select(year, phase, run_rate) |> pivot_wider(names_from = year, values_from = run_rate) |>
+  mutate(d = `2024` - `2023`)
+```
+
+The three phases behave like three different games. The powerplay has the most dot balls (two fielders out, so bowlers attack the stumps) but also a high boundary rate. The middle overs have the lowest boundary rate and the most "quiet" cricket. The death overs have the highest run rate and twice the wicket rate of the middle overs.
+
+Between the seasons the powerplay rose by `r f1(ph$d[ph$phase == "PP"], 2)` an over and the death by `r f1(ph$d[ph$phase == "DTH"], 2)`, but the middle overs by only `r f1(ph$d[ph$phase == "MID"], 2)`. The middle overs held their value even as scoring inflated elsewhere, which already hints that a team which controls them has something scarce.
+
+## Totals
+
+```{r fig-totals}
+#| fig-cap: "Distribution of innings totals by innings and season. Dashed lines are medians; the dotted line marks 200."
+#| fig-height: 4.6
+fig_eda_totals(E)
+```
+
+The average first-innings total went from `r f1(E$season$first_inns_mean[1], 0)` to `r f1(E$season$first_inns_mean[2], 0)`, and the number of 200-plus totals from `r E$season$totals_200plus[1]` to `r E$season$totals_200plus[2]`. The shift is not just a move of the centre; the right tail got much longer, with totals in the 250s and 260s that would have been freakish a few seasons ago. Chasing sides won `r f1(E$season$chase_win_pct[1], 0)`% of games in 2023 and `r f1(E$season$chase_win_pct[2], 0)`% in 2024.
+
+# Context: toss, grounds and conditions
+
+## The toss
+
+```{r fig-toss}
+#| fig-cap: "Share of matches won by the chasing side, split by what the toss winner chose."
+#| fig-height: 4.2
+fig_eda_toss(E)
+```
+
+Captains chose to field in most matches, the standard T20 instinct (you know the target, and dew helps the batting side at night). It did not buy much. The side that chased won roughly half its games in both seasons, and the toss winner did no better than the toss loser. The toss is a weak lever, and I leave it out of the team analysis.
+
+## Grounds
+
+```{r fig-venue}
+#| fig-cap: "Pace economy against spin economy at each ground with four or more matches. The dotted line is equality."
+#| fig-height: 6.4
+#| fig-width: 8
+fig_eda_venue(E)
+```
+
+```{r venue-numbers}
+#| include: false
+vv <- E$venue |> filter(matches >= 4) |> arrange(desc(run_rate))
+```
+
+Grounds matter a lot. `r vv$venue[1]` ran at `r f1(vv$run_rate[1], 2)` an over and `r vv$venue[nrow(vv)]` at `r f1(vv$run_rate[nrow(vv)], 2)`, a gap of `r f1(vv$run_rate[1] - vv$run_rate[nrow(vv)], 1)` runs an over, or about 35 runs across an innings. Chinnaswamy in Bengaluru, a small ground at altitude, is among the highest-scoring venues; Chepauk and Ekana, with slower pitches, are the lowest. Every point on the chart sits above the line: **spin was cheaper than pace at every ground**, even the batting paradises.
+
+::: {.panel}
+**What this means for the analysis.** A team that plays seven games a season at a high-scoring home ground will look worse with the ball and better with the bat on raw numbers. Any team comparison has to hold the ground fixed. Part 2 does this twice: inside the expected-runs model and again with ground fixed effects in a regression.
+:::
+
+# Bowling
+
+## Pace and spin by phase
+
+```{r fig-pace-spin}
+#| fig-cap: "Left: spin's share of balls bowled by phase. Right: economy of pace and spin by phase and season."
+#| fig-height: 4.8
+#| fig-width: 11
+fig_eda_pace_spin(E)
+```
+
+```{r ps-numbers}
+#| include: false
+psn <- E$pace_spin
+sp_share <- function(y, p) psn$share[psn$year == y & psn$phase == p & psn$kind == "Spin"]
+ec <- function(y, p, k) psn$econ[psn$year == y & psn$phase == p & psn$kind == k]
+```
+
+Spin is a middle-overs weapon: it bowled `r f1(sp_share(2023, "MID"), 0)`% of middle-overs balls in 2023. In 2024 teams bowled less spin everywhere (`r f1(sp_share(2024, "MID"), 0)`% in the middle overs), probably because the extra batter from the impact-player rule made spinners easier to target. But in the middle overs spin was still the cheaper option: `r f1(ec(2024, "MID", "Spin"), 2)` an over against `r f1(ec(2024, "MID", "Pace"), 2)` for pace. At the death in 2024 spin was taken apart (`r f1(ec(2024, "DTH", "Spin"), 2)` an over), so the spinners are best used in overs 7 to 15.
+
+## Where to land the ball
+
+```{r fig-line-length}
+#| fig-cap: "Runs per over (top number) and wickets per 100 balls (bottom number) for every line and length combination with 30 or more balls, pace and spin."
+#| fig-height: 5.6
+#| fig-width: 11
+fig_eda_line_length(E)
+```
+
+The heatmap is a reminder of the basics. For pace, the yorker on the stumps goes for `r f1(6 * E$line_length$rpb[E$line_length$kind == "Pace" & E$line_length$line == "Stumps" & E$line_length$length == "Yorker"], 1)` an over and takes a wicket every ten balls; full tosses and short balls outside the off stump are the most expensive deliveries in the game. For spin, a good length on the stumps or just outside off is the stock ball, and it is cheap. Bowling short or too full as a spinner is punished hard.
+
+## How bowling changed
+
+```{r fig-lengths}
+#| fig-cap: "Share of balls by length for pace and spin, each season."
+#| fig-height: 4.6
+#| fig-width: 10
+fig_eda_lengths_season(E)
+```
+
+In 2024 the IPL allowed two bouncers an over, and the data show it: pace bowlers bowled noticeably more short balls and fewer back-of-a-length balls. Spinners pushed a little fuller. These are the kind of league-wide shifts that make within-season comparison necessary.
+
+## How wickets fall
+
+```{r fig-dismissals}
+#| fig-cap: "How wickets fell in each phase."
+#| fig-height: 4.6
+#| fig-width: 8
+fig_eda_dismissals(E)
+```
+
+About seven wickets in ten are catches in every phase. Stumpings only appear when spinners bowl, and run-outs roughly triple at the death as batters scramble for twos.
+
+# Batting
+
+## Shots: risk and reward
+
+```{r fig-shots}
+#| fig-cap: "Strike rate against the share of balls played in control, for each shot. Colour is the dismissal rate."
+#| fig-height: 5.8
+fig_eda_shots(E)
+```
+
+```{r shot-numbers}
+#| include: false
+sh <- E$shots
+s_ <- function(x, col) sh[[col]][sh$shot == x]
+```
+
+The shots line up along a clear trade-off. The slog sweep has the highest strike rate of any shot (`r f1(100 * s_("Slog sweep", "runs_per_ball"), 0)`) but gets the batter out `r f1(s_("Slog sweep", "out_pct"), 0)`% of the time; the slog itself is similar. The straight drive is the outlier: a strike rate of `r f1(100 * s_("Straight drive", "runs_per_ball"), 0)` with `r f1(s_("Straight drive", "control_pct"), 0)`% control, because it is only played to the right ball. The defensive shots sit at the bottom, safe and almost scoreless.
+
+## Where the runs go
+
+```{r fig-wagon}
+#| fig-cap: "Share of runs off the bat by scoring zone, from the batter's point of view (left-handers mirrored). Bowler at the top."
+#| fig-height: 5.8
+#| fig-width: 10
+fig_eda_wagon(E, D)
+```
+
+```{r wagon-numbers}
+#| include: false
+wg <- E$wagon |> group_by(kind, zone) |> summarise(runs = sum(runs), .groups = "drop") |>
+  group_by(kind) |> mutate(share = 100 * runs / sum(runs)) |> ungroup()
+w_ <- function(k, z) wg$share[wg$kind == k & wg$zone == z]
+```
+
+Midwicket is the busiest zone in the league for both hands. Against spin, it takes `r f1(w_("Spin", "Midwicket"), 0)`% of all runs, and midwicket plus mid-on together take nearly half: batters hit with the turn or slog across the line. Against pace, runs are spread more evenly, with far more coming behind square on both sides (fine leg, third man) from pace on the ball.
+
+```{r fig-rose}
+#| fig-cap: "Direction of every four and six, batter-relative, in 15-degree bins."
+#| fig-height: 7.4
+#| fig-width: 8
+fig_eda_rose(E)
+```
+
+The boundary rose makes the same point sharper. Sixes off spin go almost entirely to the leg side and straight. Sixes off pace go leg side too, but more behind square, from pulls and hooks. Fours are spread round the wicket. A captain setting a field for a spinner in the middle overs should expect most of the damage between mid-on and deep square leg.
+
+## Matchups
+
+```{r fig-matchups}
+#| fig-cap: "Strike rate and balls per dismissal for each batter hand against each bowling style (300+ balls)."
+#| fig-height: 6.4
+#| fig-width: 8.4
+fig_eda_matchups(E)
+```
+
+```{r matchup-numbers}
+#| include: false
+mu <- E$matchups
+m_ <- function(h, s, col) mu[[col]][mu$bat_hand == h & mu$style_name == s]
+```
+
+Matchups are real, and they point the way the coaching manuals say. The hardest balls to score off are the ones turning *away* from the bat: off-spin to left-handers (strike rate `r f1(m_("LHB", "Off-break", "sr"), 0)`, a wicket every `r f1(m_("LHB", "Off-break", "balls_per_out"), 0)` balls) and left-arm orthodox to right-handers (`r f1(m_("RHB", "Slow left-arm orthodox", "sr"), 0)`). Medium pace is the easiest to score off for everyone. This is why a balanced spin attack, with balls turning both ways, matters in the middle overs.
+
+## Getting in
+
+```{r fig-settling}
+#| fig-cap: "Strike rate by balls already faced in the innings, each season."
+#| fig-height: 4.4
+#| fig-width: 8
+fig_eda_settling(E)
+```
+
+A batter's first five balls go at a strike rate around `r f1(E$settling$sr[E$settling$year == 2023 & E$settling$stage == "1-5"], 0)`; by ten balls in he is scoring at 150 and up. Kartikeya Date's point, that a batter on 0 off 0 and the same batter on 30 off 20 are different players, is visible in the raw data, and it is why "balls already faced" goes into the expected-runs model in Part 2. In 2024 batters got going faster at every stage.
+
+# Teams
+
+## Raw team profiles
+
+```{r fig-team-grid}
+#| fig-cap: "Runs per over by phase for every team-season, batting (top) and conceded (bottom). Green is better than that season's league average."
+#| fig-height: 7.4
+#| fig-width: 10
+fig_eda_team_grid(E)
+```
+
+No team is good everywhere, and the weak spots move from season to season. This is a raw view (no adjustment for ground or match situation), so it is a starting point, not a verdict. A few things already stand out. Kolkata's 2024 batting is green in every phase, which matches their title. Delhi's 2023 batting is red everywhere. Bengaluru's middle-overs bowling is among the most expensive in both seasons, while their powerplay and death bowling are not. Part 2 will check whether these survive the adjustments.
+
+## What goes with winning
+
+```{r fig-win-cor}
+#| fig-cap: "Correlation of each team-level rate with win percentage across the 20 team-seasons. Each rate is centred within its season first."
+#| fig-height: 5.4
+fig_eda_win_correlates(E)
+```
+
+I lined up fourteen team-level rates against win percentage across the twenty team-seasons (centring each rate within its season first, so that 2024's higher scoring doesn't count as "better"). The strongest relationship is **bowling wickets per over in the middle overs** (r = `r f1(E$win_correlates$r[1], 2)`), ahead of middle-overs batting run rate (`r f1(E$win_correlates$r[2], 2)`) and not losing early wickets with the bat (`r f1(E$win_correlates$r[3], 2)`).
+
+This is twenty points, so I would not read much into the exact order, and correlation is not cause. But it fits the cricket. The middle overs are the longest phase (nine overs), and a wicket there both stops the run rate and exposes the lower order before the death. A team that cannot take middle-overs wickets lets the opposition reach over 15 with wickets in hand, and that is exactly when the 2024 batting became most destructive.
+
+# Players
+
+```{r fig-batters}
+#| fig-cap: "Batters with 100+ balls in a season: average against strike rate. The eight busiest batters each season are labelled."
+#| fig-height: 5.6
+#| fig-width: 11
+fig_eda_batters(E)
+```
+
+```{r fig-bowlers}
+#| fig-cap: "Bowlers with 100+ balls in a season: economy (reversed) against wickets per 100 balls."
+#| fig-height: 5.6
+#| fig-width: 11
+fig_eda_bowlers(E)
+```
+
+The individual landscape is wide, and two seasons are a small sample for any one player. A bowler with 150 balls in a season has bowled 25 overs; one bad night moves his economy by half a run. This is why Part 2 never ranks players on raw rates. It compares each ball with what an average player would have done in the same situation, and then shrinks each player's record towards the average for his role, by an amount the data choose (Part 3 explains how).
+
+# The auction market
+
+## What squads cost
+
+```{r fig-spend}
+#| fig-cap: "Squad cost by team and season, split into money for retained (or traded) players and money spent at the auction."
+#| fig-height: 4.8
+#| fig-width: 10
+fig_eda_auction_spend(E)
+```
+
+```{r spend-numbers}
+#| include: false
+asp <- E$auction_spend
+rcb <- asp |> filter(team == TA)
+```
+
+Squads cost roughly the same, because the purse cap binds. What differs is how much of the money is *new*. Before 2023, `r TA` spent only `r rs(rcb$bought_cr[rcb$season == 2023])` crore at the auction, the least in the league, and kept almost everyone. Before 2024 they spent `r rs(rcb$bought_cr[rcb$season == 2024])` crore, the most. That swing is a decision, and Part 2 audits it.
+
+## What the market pays for
+
+```{r fig-roles}
+#| fig-cap: "Contract value by role and origin (log scale)."
+#| fig-height: 4.8
+#| fig-width: 10
+fig_eda_auction_roles(AU)
+```
+
+Overseas players cost more at the median in most roles, which reflects the four-overseas limit on any XI. But inside each role the spread is enormous, from base price to the top contract. Price is a weak guide to role, and (as Part 2 shows) only a moderate guide to value.
+
+## How much squads changed
+
+```{r fig-churn}
+#| fig-cap: "Players kept, released and newly arrived between the 2023 and 2024 auction sheets."
+#| fig-height: 5
+fig_eda_churn(E)
+```
+
+Most teams kept 13 to 18 players. Sunrisers changed the most (12 arrivals). Bengaluru released nine and brought in nine.
+
+# What the exploration tells me to do next
+
+These are the findings, gathered in one place, with what each one means for the analysis that follows.
+
+```{r findings}
+tribble(
+  ~`#`, ~`What I see`, ~`What it means in cricket terms`, ~`What I do with it`,
+  1, sprintf("Run rate %s to %s between seasons", f1(E$season$run_rate[1], 2), f1(E$season$run_rate[2], 2)), "The impact-player rule added a batter and changed risk appetite", "Compare everything within season",
+  2, "Powerplay and death rose ~0.75 an over; middle overs ~0.4", "Middle overs held their value while everything else inflated", "Look hard at the middle overs",
+  3, sprintf("Grounds differ by %s runs an over", f1(vv$run_rate[1] - vv$run_rate[nrow(vv)], 1)), "Home ground shapes raw numbers", "Hold venue fixed, twice",
+  4, "Spin cheaper than pace at every ground, especially in overs 7-15", "Spin is the middle-overs control tool", "Split cells by pace and spin",
+  5, "Teams bowled less spin in 2024 but it stayed cheaper in the middle", "Spinners still worth having, used in the right phase", "Check whether teams used them well",
+  6, sprintf("Middle-overs wickets are the habit most tied to winning (r = %s)", f1(E$win_correlates$r[1], 2)), "Breaking partnerships before the death", "Value wickets, not just economy",
+  7, "Yorkers and good-length balls cheapest; full tosses and short balls dearest", "Execution matters", "Context for player-level reading",
+  8, "Turning-away spin is the hardest matchup", "A balanced spin attack is valuable", "Context for squad-building",
+  9, "Batters need ~10 balls to get going", "Set batters are a different proposition", "Put balls faced in the expectation model",
+  10, "Toss winner gains little", "Weak lever", "Leave the toss out",
+  11, "Raw team weak spots move between seasons", "Most single-season weaknesses are noise", "Demand replication across seasons",
+  12, "Squads cost the same; new money varies a lot", "Auction decisions differ in kind, not size", "Audit what the new money bought"
+) |> tab(caption = "Findings from the exploration and how each one is used")
+```
+
+The exploration doesn't pick a team, and I didn't want it to. What it does is set the rules for picking one fairly: compare within season, hold the ground fixed, split by phase and by bowler type, demand that a weakness shows up in both seasons, and look at what the money did. [Part 2](02_team_review.html) turns those rules into a screen.

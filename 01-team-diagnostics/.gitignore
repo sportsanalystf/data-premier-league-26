@@ -1,0 +1,15 @@
+# R / Quarto scratch
+.Rhistory
+.RData
+.Rproj.user/
+*_files/
+*.knit.md
+.quarto/
+# OS
+.DS_Store
+Thumbs.db
+.Rapp.history
+/.quarto/
+report/.quarto/
+paper/.quarto/
+appendix/.quarto/

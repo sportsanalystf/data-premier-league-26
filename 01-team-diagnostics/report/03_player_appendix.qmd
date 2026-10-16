@@ -1,0 +1,375 @@
+---
+title: "The players and the methods"
+subtitle: "Part 3 of 3 · Player-level detail behind the team review, and how each tool works"
+author: "Faizan Khan"
+date: last-modified
+date-format: "D MMMM YYYY"
+abstract: |
+  Data Premier League 2026, preliminary round, Task 1. This appendix holds the detail that would have slowed Part 2 down: every player in the chosen squad with his value and price, the batting roles and entry points, the middle-overs spin market in full, the auction moves player by player, the pressure layer, and a plain-language account of each model with the code that runs it.
+format:
+  html:
+    theme: cosmo
+    css: report.css
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    toc-title: "Contents"
+    number-sections: true
+    code-fold: true
+    code-summary: "Show the R"
+    embed-resources: true
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    smooth-scroll: true
+    anchor-sections: true
+    html-math-method: mathml
+execute:
+  echo: true
+  warning: false
+  message: false
+knitr:
+  opts_knit:
+    root.dir: ".."
+  opts_chunk:
+    fig.width: 9
+    fig.height: 5.2
+    dpi: 150
+    fig.align: center
+    out.width: "100%"
+---
+
+```{r setup}
+#| include: false
+source("report/_common.R")
+pv <- V$pv
+```
+
+::: {.panel}
+[Part 1](01_data_exploration.html) explores the league. [Part 2](02_team_review.html) chooses `r TA` and audits its decisions. This part is the reference: look things up here when Part 2 makes a claim about a player or a method.
+:::
+
+# The `r TA` squad, player by player
+
+## Value and price, each season
+
+```{r squad-value}
+V$money$players |> filter(team == TEAM) |>
+  arrange(season, desc(war_total)) |>
+  transmute(Season = season, Player = player, Role = role_sheet,
+            `Balls batted` = balls_bat, `Balls bowled` = balls_bowl,
+            `Batting WAR` = war_bat, `Bowling WAR` = war_bowl, `Total WAR` = war_total,
+            `Price (cr)` = price_cr, `Market value (cr)` = market_value_cr, `Surplus (cr)` = surplus_cr) |>
+  tab(caption = sprintf("%s players with a price, by season. Market value is WAR at the league's crore-per-WAR rate.", TA), digits = 2)
+```
+
+How to read it. WAR is wins above what a freely available replacement player would have produced in the same balls. A player with 1.0 WAR added about one win to the season. Market value is that WAR priced at the league's going rate (`r rs(V$money$rate$cr_per_war[1], 2)` crore per WAR in 2023, `r rs(V$money$rate$cr_per_war[2], 2)` in 2024); surplus is market value minus what he was paid. Players not on the auction sheet (replacement signings) have no price and are left out of this table but not out of the team totals.
+
+## Batting roles and entry points
+
+Omkar Walunj made three points in the mentor session that are worth checking before any recommendation about people. A batting position is a number on the team sheet; the **entry point**, the state of the match a batter walks into, is the actual job. **Slot exposure is not slot importance**: the batter who faces most balls is not necessarily the one who moves the match most. And a player should first be compared with the situations his own team gave him.
+
+```{r roles}
+ep <- X$entry |> filter(team == TEAM) |>
+  group_by(player) |>
+  summarise(Innings = n(), `Median entry over` = median(entry_over),
+            `Entered in powerplay %` = 100 * mean(entry_over <= 6),
+            `Median wickets down at entry` = median(entry_wkts), .groups = "drop")
+lv <- pv$wide |> filter(team == TEAM) |>
+  group_by(player) |>
+  summarise(balls = sum(balls_bat), raa = sum(raa_bat), raa_lev = sum(raa_lev_bat),
+            war = sum(war_bat), .groups = "drop") |>
+  filter(balls >= 150) |>
+  mutate(per100 = 100 * raa / balls, lev100 = 100 * raa_lev / balls)
+roles <- lv |> left_join(ep, by = "player") |> arrange(desc(lev100))
+roles |> transmute(Player = player, Balls = balls, Innings, `Median entry over`,
+                   `Entered in powerplay %`, `Median wickets down at entry`,
+                   `Runs above avg / 100` = per100, `Leverage-weighted / 100` = lev100,
+                   `Batting WAR` = war) |>
+  tab(caption = sprintf("%s batters with 150+ balls over both seasons", TA), digits = 1)
+upl <- roles |> mutate(gain = lev100 - per100, entry = `Median entry over`) |> slice_max(gain, n = 1, with_ties = FALSE)
+top_exp <- roles |> slice_max(balls, n = 1, with_ties = FALSE)
+below <- roles |> filter(per100 < 0)
+```
+
+Inside the squad, the clearest case of importance beating exposure is `r upl$player`. His median entry was the `r ordinal(round(upl$entry))` over, and his runs above average go from `r s1(upl$per100)` to `r s1(upl$lev100)` per 100 balls once each ball is weighted by how much it could swing the match. That is what a finisher is for, and a plain per-ball number undersells it. `r top_exp$player` faced the most balls (`r n0(top_exp$balls)`), which gives him a large WAR; per ball he was `r s1(top_exp$per100)` against average. Only `r nrow(below)` of the `r nrow(roles)` regular batters were below average per ball (`r and_list(below$player)`). With the finishing role covered and the top order carrying the exposure, there is no batting role that is obviously missing, which is why Part 2 leaves the batting alone.
+
+# The middle-overs spin cell
+
+## `r TA`'s spinners in the cell, each season
+
+```{r rcb-spin}
+bind_rows(A$spin23, A$spin24) |>
+  transmute(Season = season, Player = player, Balls = balls, `Share %` = share, Runs = runs,
+            Wickets = wkts, Economy = econ, `Raw /100` = per100, `Shrunk /100` = shrunk_per100) |>
+  tab(caption = sprintf("%s middle-overs spin, by bowler and season", TA), digits = 1)
+```
+
+The raw and shrunk columns differ a lot, on purpose. A bowler's season in this cell is 50 to 150 balls; the shrinkage constant for bowling is `r n0(pv$shrink$bowl$k)` balls ([the methods section](#shrink) explains where that comes from), so one season of evidence gets only a small weight against the average for the role. Shrunk numbers are for *predicting* the next season; raw numbers describe what happened.
+
+## Every team's middle-overs spin
+
+```{r spin-league}
+VF |> filter(phase == "MID", kind == "Spin") |>
+  group_by(Team = abbr(team_bowl), Season = as.character(year)) |>
+  summarise(Balls = n(), Economy = 6 * mean(runs), `Per 100 vs expected` = 100 * mean(raa_bowl), .groups = "drop") |>
+  pivot_wider(names_from = Season, values_from = c(Balls, Economy, `Per 100 vs expected`)) |>
+  arrange(`Per 100 vs expected_2023` + `Per 100 vs expected_2024`) |>
+  tab(caption = "Middle-overs spin by team and season", digits = 2, highlight = 1)
+```
+
+## The market for the archetype
+
+```{r market-full}
+O$regs |> arrange(desc(shrunk_per100)) |>
+  transmute(Player = player, Team = abbr(main_team), `Mid-overs balls` = balls,
+            `Raw /100` = per100, `Shrunk /100` = shrunk_per100, `Posterior SD` = post_sd_per100,
+            Overseas = ifelse(overseas, "Yes", ""), `Latest price (cr)` = price_cr,
+            `Value per crore` = value_per_cr) |>
+  tab(caption = "Regular middle-overs spinners (150+ balls, both seasons pooled), best first", digits = 2)
+```
+
+```{r fig-market}
+#| fig-cap: "Middle-overs spinners: shrunk rate against latest price."
+#| fig-height: 5
+fig_market(O$mk_all)
+```
+
+## 2023's regular spinners, and how they did in 2024
+
+```{r spin-repeat}
+A$league_spin |>
+  transmute(Player = player, `2023 team` = abbr(team_2023), `2023 balls` = balls_2023, `2023 economy` = econ_2023,
+            `2023 /100` = per100_2023, `2023 shrunk` = shrunk_2023,
+            `2024 balls` = balls_2024, `2024 economy` = econ_2024, `2024 /100` = per100_2024,
+            `Auction status 2024` = status_2024, Route = route) |>
+  tab(caption = "Regular middle-overs spinners in 2023 (150+ balls), and their 2024", digits = 2)
+```
+
+# The auction moves, player by player
+
+```{r moves-all}
+A$outcomes |> arrange(factor(move, c("Kept", "Released", "Arrived")), desc(price_cr)) |>
+  transmute(Move = move, Player = player, Role = type, Bowls = coalesce(bowl_kind, "–"),
+            Overseas = ifelse(overseas, "Yes", ""), `Price (cr)` = price_cr,
+            `Other team` = coalesce(other_team, "–"), `WAR 2023` = war_2023, `WAR 2024` = war_2024,
+            `Team 2024` = coalesce(team_2024, "–"), Note = note) |>
+  tab(caption = sprintf("Every player on %s's 2023 or 2024 sheet: kept, released or arrived", TA), digits = 2)
+```
+
+```{r money-kind}
+A$money_kind |> transmute(Move = move, Group = group, Players = players, `Crore` = cr, Names = names) |>
+  tab(caption = "Contract money by move and bowling type", digits = 2)
+```
+
+# League context
+
+## The best player-seasons
+
+```{r top-war}
+pv$wide |> arrange(desc(war_total)) |> head(20) |>
+  transmute(Player = player, Season = season, Team = abbr(team),
+            `Balls batted` = balls_bat, `Balls bowled` = balls_bowl,
+            `Batting WAR` = war_bat, `Bowling WAR` = war_bowl, `Total WAR` = war_total,
+            `Price (cr)` = price_cr) |>
+  tab(caption = "Top 20 player-seasons by WAR")
+```
+
+The top of the list reads like a list of the two seasons' best cricketers, which is the sanity check I wanted from a measure built without looking at results.
+
+## Team value
+
+```{r team-value}
+V$team |> arrange(season, desc(war_total)) |>
+  transmute(Season = season, Team = abbr, `Batting WAR` = war_bat, `Bowling WAR` = war_bowl,
+            `Total WAR` = war_total, `Spend (cr)` = spend_cr, `Cr per WAR` = cr_per_war_team, `Surplus (cr)` = surplus_cr) |>
+  tab(caption = "Team WAR, spend and surplus, each season", digits = 2)
+```
+
+# The pressure layer {#pressure}
+
+Sahen Gupta's PACE framework (Pressure context, Arousal signature, Consistency profile, Event sequence) and his warning to compare a player with himself shape this part. Pressure is defined from leverage: the top quarter of leverage within each innings type is high pressure, the bottom half is low, and the middle quarter is left out so the contrast is clean.
+
+```{r pressure-numbers}
+#| include: false
+mb <- P$mixed_bat; rb <- P$repeat_bat; rw <- P$repeat_bowl
+ar <- P$arousal; ar_t <- t.test(ar$d_false_shot); cp <- P$consistency
+ab <- P$after_boundary$league; clus <- P$clusters$league
+```
+
+**Is there a pressure effect on average?** A mixed model with a random slope on pressure for each player says yes: in high-leverage balls the average batter produces `r f1(abs(100 * mb$fixed_high), 1)` fewer runs per 100 balls than expected (standard error `r f1(100 * mb$fixed_se, 1)`).
+
+**Do players differ in how they handle it?** Much less than they differ in general ability: the spread of players' pressure slopes (SD `r f1(100 * mb$sd_slope, 1)` per 100 balls) is about a third of the spread of baseline ability (`r f1(100 * mb$sd_intercept, 1)`).
+
+**Is "clutch" repeatable?** A batter's pressure differential in 2023 against the same measure in 2024:
+
+```{r fig-clutch}
+#| fig-cap: "Pressure differential in 2023 against 2024, batters with enough balls in both seasons."
+#| fig-height: 4.8
+fig_clutch(rb, "Batters")
+```
+
+The correlation is `r f1(rb$r, 2)` for batters (n = `r rb$n`) and `r f1(rw$r, 2)` for bowlers (n = `r rw$n`), neither distinguishable from zero. Last season's clutch performer tells you nothing about this season's. Baseball reached the same conclusion about clutch hitting.
+
+**Arousal signature.** Under pressure, within each batter, false shots *fall* by `r f1(abs(mean(ar$d_false_shot)), 1)` points (`r pv_txt(ar_t$p.value)`), dot balls rise by `r f1(mean(ar$d_dot), 1)` and boundaries fall by `r f1(abs(mean(ar$d_bdry)), 1)`. Batters don't lose control under pressure; they tighten up.
+
+```{r fig-arousal}
+#| fig-cap: "Within-batter change from low to high pressure."
+#| fig-height: 3.6
+fig_arousal(ar)
+```
+
+**Consistency profile.** Sahen's rule of thumb flags a player whose coefficient of variation jumps more than 15 points under pressure. It flags `r sum(cp$flag_15)` of `r nrow(cp)` batters, but when the pressure labels are shuffled within each player 300 times, only `r sum(cp$flag_15 & cp$p_perm < 0.05)` of those jumps beat what shuffling produces 95% of the time. With a handful of high-pressure segments per player, most 15-point jumps are what noise looks like. The rule is a good *screen* for a coach with context; on its own it needs a second test.
+
+```{r fig-consistency}
+#| fig-cap: "Coefficient-of-variation jump against its permutation p-value."
+#| fig-height: 4.6
+fig_consistency(cp)
+```
+
+**Event sequence.** The ball after a bowler concedes a boundary goes for `r f1(100 * (ab$rae[ab$after_bdry] - ab$rae[!ab$after_bdry]), 1)` more runs per 100 balls than his other balls, relative to expectation (part of that is the batter being in). Wickets do *not* cluster: after a wicket the chance of another in the next six balls is `r f1(100 * clus$after_wicket, 1)`%, slightly *below* the `r f1(100 * clus$expected, 1)`% the game state predicts.
+
+# Methods {#methods}
+
+## Data and features
+
+All game state is rebuilt as it stood before each delivery: runs, wickets, balls remaining, required rate, the batter's balls faced so far and whether he is "set". A guard function stops any model that is handed a post-delivery column. Phases are overs 1-6 (powerplay), 7-15 (middle) and 16-20 (death). Bowler type is taken from the bowling-style column (pace or spin), not from `bowl_type`, which changes meaning between seasons. Run rates are total runs, extras included, per six legal balls.
+
+## Expected runs: the M0 to M4 ladder
+
+```{r tbl-el}
+EL$scores |> select(Model = model, n, MAE = mae, RMSE = rmse, `Poisson dev.` = poisson_dev,
+                    `Calibration slope` = calib_slope, `% better than null` = pct_better_than_null) |>
+  tab(caption = sprintf("Expected-runs ladder: trained on %s balls (2023), tested on %s (2024)", n0(EL$n_train), n0(EL$n_test)), digits = 3)
+```
+
+The target is the runs charged to the bowling side on each legal ball (off the bat plus wides and no-balls); byes and leg-byes belong to neither batter nor bowler and are left out. M2's factors are over, innings-and-chase, wickets-by-phase, bowler type-by-phase, the batter's set-ness, venue, and handedness-by-bowler-type. Phase sits *inside* the expectation, never as a weight applied afterwards: once the model knows it is the 18th over with two down, death-overs difficulty is already in it.
+
+The first version of M2 was broken: it scored the same as the null with a calibration slope of −121. The backfitting loop compounded the multipliers on every sweep instead of re-estimating them, and the shrinkage then pulled every factor back to one. The fix was to compute each factor's update from the leave-one-out product of the others. I mention it because it is a good example of a model that looked like it was working.
+
+## Win probability: the W0 to W4 ladder
+
+```{r tbl-wp}
+WP$scores |> filter(innings == "both") |>
+  select(Model = model, AUC = auc, Brier = brier, `Log-loss` = log_loss, ECE = ece) |>
+  tab(caption = "Win-probability ladder, 2024 deliveries, both innings", digits = 4)
+```
+
+```{r fig-resource}
+#| fig-cap: "Expected remaining runs by balls and wickets left: a three-parameter resource curve."
+#| fig-height: 4.4
+fig_resource(WP$resource_grid, WP$resource)
+```
+
+W1 models expected remaining runs as $R(b,w) = R_0 (1-e^{-b/\beta}) F(w)$ with a Duckworth-Lewis-shaped wicket term, and turns a score ratio into a win probability through a Pythagorean link with exponent 6. Fitting the exponent on 2023 alone gave values near `r f1(WP$exponent_2023[["first"]], 1)` and `r f1(WP$exponent_2023[["second"]], 1)`; 2024 matches were decided more sharply, so the fitted version (W2) was under-confident and the fixed 6 travelled better.
+
+```{r fig-calib}
+#| fig-cap: "Calibration on 2024; points sized by balls in each bin."
+#| fig-height: 5.5
+#| fig-width: 6.5
+#| out-width: "75%"
+fig_wp_calib(WP$calib, setNames(WP$scores |> filter(innings == "both", !grepl("^W0", model)) |> pull(model), c("p1", "p2", "p3", "p4")))
+```
+
+```{r fig-leverage}
+#| fig-cap: "Mean leverage by over."
+#| fig-height: 4
+fig_leverage(WPA)
+```
+
+Within every innings, ball-by-ball WPA sums to the change in win probability from first ball to last, once wides and no-balls are included. Leverage makes cricket sense: in the first innings a ball matters most early, when a wicket costs most future runs; in a chase the stakes rise to the end. Ganjoo's negative result also reproduces: mean WPA is flat across leverage, only its size grows, so leverage is used to define pressure and never to divide WPA.
+
+```{r fig-wpa-lev}
+#| fig-cap: "Signed and absolute WPA by leverage decile."
+#| fig-height: 4
+fig_wpa_leverage(WPA)
+```
+
+## Runs above average, shrinkage and WAR {#shrink}
+
+**Runs above average per ball** = runs above expected (from M2) plus a wicket term. A wicket costs the drop in expected remaining runs from the resource curve, so it is worth more early in an innings. The batter's term is (dismissed − expected probability of dismissal) × that cost; the bowler's mirrors it using only wickets credited to him. Wides and no-balls are added back to the bowler against the league rate. Residuals are centred within each season and innings, because the first run of this model rated every 2024 batter above average (that was the impact-player rule, not the players).
+
+**Shrinkage.** The between-player and within-player variances give a shrinkage constant k by method of moments: `r n0(pv$shrink$bat$k)` balls for batting and `r n0(pv$shrink$bowl$k)` for bowling. A batter's record over `r n0(pv$shrink$bat$k)` balls and the league average deserve equal weight; after 120 balls his own record is only about `r f1(100 * pv$shrink$bat$reliability_at_120, 0)`% of the estimate. Tom Nielsen's stability work says the same in a different way.
+
+**Replacement and wins.** Replacement level follows cricWAR: players outside the top 8 × 10 by workload in each role and season are the freely available pool. Runs convert to wins by differentiating the Pythagorean model at parity: runs per win = 4 × runs per match / k = 4 × `r f1(pv$runs_per_match, 1)` / `r f1(SCR$results$k, 2)` = **`r f1(pv$rpw, 1)`**. WAR is a measurement and is **not** shrunk; talent estimates are.
+
+```{r code-shrink}
+#| eval: false
+#| code-fold: false
+#| code: !expr show_fn("R/09_value.R", "shrinkage_k")
+```
+
+## The team screen
+
+Cells are batting and bowling × three phases × pace and spin. The cell value is runs above average per 100 balls, team's point of view, minus the same for the other nine teams. Intervals come from a **match-cluster bootstrap** (balls in the same match share a pitch and conditions, so resampling balls would understate uncertainty). The ground hurdle is an independent check on raw runs: a linear model of runs per ball on a team indicator plus season and ground fixed effects, with match-clustered standard errors computed from the sandwich formula.
+
+```{r code-boot}
+#| eval: false
+#| code-fold: false
+#| code: !expr show_fn("R/11_team_screen.R", "boot_cell")
+```
+
+```{r code-ground}
+#| eval: false
+#| code-fold: false
+#| code: !expr show_fn("R/11_team_screen.R", "ground_test")
+```
+
+## The decision audit
+
+The stake of a weak cell in a season is (team rate − rest-of-league rate) × the team's balls in the cell, in runs; divided by runs per win for wins; times the league crore-per-WAR for money. Foresight comparisons use 2023 shrunk rates for both the candidate and the team's own retained bowlers. Hindsight comparisons use 2024 raw rates and are only shown where the candidate bowled 100+ balls in the cell in 2024.
+
+```{r code-value}
+#| eval: false
+#| code-fold: false
+#| code: !expr show_fn("R/13_decision_audit.R", "cell_value")
+```
+
+## The leakage guard
+
+```{r code-leak}
+#| eval: false
+#| code-fold: false
+#| code: !expr show_fn("R/03_features.R", "assert_no_leakage")
+```
+
+# How the analysis is built {.unnumbered}
+
+```{r code-map}
+#| echo: false
+tribble(
+  ~Part, ~File, ~`What it does`,
+  "Data", "R/01_setup.R", "Paths, constants, palette, team and venue names, helpers",
+  "Data", "R/02_data.R", "Loads, audits, cleans and validates deliveries; decodes wagon zones",
+  "Data", "R/03_features.R", "Match state before each ball; the leakage guard",
+  "Data", "R/04_auction.R", "Auction sheets and three-stage name matching",
+  "Data", "R/05_tables.R", "Match, team and player-season tables",
+  "Part 1", "R/06_eda.R", "League-wide exploration tables",
+  "Part 2, §3", "R/07_expectation.R", "Expected-runs ladder M0-M4",
+  "Part 2, §3", "R/08_winprob.R", "Resource curve, win-probability ladder W0-W4, WPA, leverage",
+  "Part 2, §3", "R/09_value.R", "Runs above average, shrinkage, WAR, crore per WAR, hedonic prices",
+  "Part 3, §5", "R/10_pressure.R", "The pressure layer",
+  "Part 2, §2", "R/11_team_screen.R", "Problem A: the three gates and the full scorecard",
+  "Part 2, §4", "R/12_team_diagnosis.R", "Problem B: hypotheses H1-H6 and their tests",
+  "Part 2, §5", "R/13_decision_audit.R", "Problem B: the decision audit, 2023 to auction to 2024",
+  "Part 2, §6", "R/14_recommend.R", "Options, simulated wins, retention view, evidence table",
+  "Charts", "R/15_figures_eda.R", "Every chart in Part 1",
+  "Charts", "R/16_figures_screen.R", "Problem map and Problem A charts",
+  "Charts", "R/17_figures_team.R", "Model-ladder and Problem B charts"
+) |>
+  mutate(File = gh(File)) |>
+  kable(format = "html", escape = FALSE, table.attr = 'class="table table-sm table-striped dpl-table code-map"')
+```
+
+```
+Rscript run_all.R        # rebuilds data/processed and outputs/ (about four minutes)
+Rscript build.R          # everything: figures, the three reports, paper, dashboard, deck
+```
+
+The random seed is fixed (`SEED = `r SEED`` in `R/01_setup.R`), so the bootstrap intervals and simulations are identical on every run.
+
+```{r session}
+#| code-summary: "Show the R and package versions"
+cat(R.version.string, "\n")
+for (p in c("dplyr", "ggplot2", "lme4", "mgcv", "gbm", "knitr", "ggrepel", "patchwork", "readxl"))
+  cat(sprintf("%-10s %s\n", p, as.character(packageVersion(p))))
+```

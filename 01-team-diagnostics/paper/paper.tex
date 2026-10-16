@@ -1,0 +1,153 @@
+% Finding the Leak -- DPL 2026, Question 1. CVPR author-kit format.
+% Every number is a macro from numbers.tex and every table body from tables.tex
+% (both written by scripts/make_numbers.R); figures come from ../outputs/figures.
+\documentclass[10pt,twocolumn,letterpaper]{article}
+\usepackage[pagenumbers]{cvpr}
+\usepackage{graphicx,booktabs,amsmath,amssymb,xcolor}
+\usepackage{cuted}
+\usepackage{caption}
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+\graphicspath{{../outputs/figures/}}
+\input{numbers}
+\input{tables}
+\def\paperID{DPL-Q1}
+\def\confName{DPL}
+\def\confYear{2026}
+
+\title{Finding the Leak: Choosing a Franchise Fairly and Auditing Its Decisions\\with Ball-by-Ball IPL Data}
+\author{Faizan Khan\\
+Data Premier League 2026 -- Preliminary Round, Question 1\\
+{\tt\small github.com/sportsanalystf/data-premier-league-26}}
+
+\begin{document}
+\twocolumn[{%
+\renewcommand\twocolumn[1][]{#1}%
+\maketitle
+\begin{center}
+\includegraphics[width=0.94\textwidth]{a05_cell_scan.png}
+\captionof{figure}{Every team, every cell: runs above the rest of the league per 100 balls for batting and bowling by phase and bowler type, IPL 2023--24, with ground and game state held fixed. Stars count hurdles cleared (multiplicity, ground fixed effects, replication). One of \kv{ncells} team-cells clears all three: \kv{teamabbr}'s middle-overs spin bowling.}
+\label{fig:teaser}
+\end{center}
+\vspace{1em}
+}]
+
+\begin{abstract}
+A franchise report has two problems inside it: which team to study, and what that team should do. We answer the first with a screen every team goes through, using three gates fixed in advance: winning fewer games than the runs deserved in both seasons (Pythagorean expectation, $k=\kv{kpyth}$), a weakness on the field that survives a Benjamini--Hochberg correction, ground fixed effects and replication across seasons, and a negative money surplus. Only \kv{team} passes all three. For that team we test eight written hypotheses and audit its decisions season by season. Most of its reputation for poor bowling is its home ground; what remains, and repeats, is middle-overs spin (\kv{cellper100} runs per 100 balls against the rest of the league; \kv{cell2023} in 2023 and \kv{cell2024} in 2024), costing about \kv{stakewinsa} wins a season. After 2023 the franchise released both main spinners and spent INR~\kv{pacenew} crore of new money on pace against INR~\kv{spinnew} crore on spin; its 2024 recovery (\kv{elWa} win in seven, then \kv{elWb}) came from the powerplay, not the weak cell. Four model ladders validated on a later season supply the measurements; in two of them the simplest well-calibrated model wins.
+\end{abstract}
+
+\section{Introduction}
+A franchise can change three things: who bowls and bats when, who is in the squad, and what it pays. The evidence usually brought to those decisions, economy and strike rates, mixes skill with the home ground, the match situations a team creates and the noise of small samples. Following the mentor guidance for this competition we start from the decision~\cite{desai2026} and work through six steps: situation, search, obvious gap, representation (a problem map from purse to squad to phases to runs to wins and back to the next auction), hypotheses, key question.
+
+Our contributions: (i) a \emph{fair choice of subject}, by gates rather than a composite score; (ii) \emph{model ladders} scored on a later season; (iii) a \emph{decision audit} that separates what the franchise could have known at the time (foresight) from what we know now (hindsight), and prices each step in runs, wins and crore.
+
+\section{Related work}
+Run value conditioned on game state underlies cricWAR~\cite{rafique2022}, which chains run value and replacement level into wins above replacement. Ganjoo~\cite{ganjoo2026} treats balls and wickets as resources, links score ratios to win probability with a Pythagorean form and defines leverage as the swing between a six and a wicket. Bandyopadhyay~\cite{bandyopadhyay} fits a multiplicative expectation with empirical-Bayes shrinkage; Date~\cite{date} argues for the batter's balls faced in the expectation; Nielsen~\cite{nielsen} quantifies how slowly T20 rates stabilise. Malhotra~\cite{malhotra2022} fits hedonic auction prices. For multiple comparisons we use Benjamini--Hochberg~\cite{bh1995}; for pressure, the PACE framework~\cite{gupta2026}.
+
+\section{Data}
+Ball-by-ball records for IPL 2023 and 2024 (\kv{rows} deliveries, \kv{matches} matches, \kv{venues} venues) with tracking fields, plus both auction sheets (retained, sold, traded, unsold). A \texttt{bat\_out} flag is true on \kv{batoutpct}\% of rows, retirements conflate two outcomes, and wagon zones are undocumented (decoded with \kv{wagonagree}\% agreement). All game state is rebuilt as it stood before each ball and a guard blocks post-delivery features. League scoring rose from \kv{rr2023} to \kv{rr2024} runs an over, mostly in the powerplay (+\kv{ppd}) and death (+\kv{dthd}) rather than the middle overs (+\kv{midd}), so every comparison is made within season. Across the 20 team-seasons the rate most correlated with win percentage is middle-overs bowling wickets per over ($r=\kv{wincorr}$).
+
+\section{Method}
+\subsection{Problem A: three gates}
+\textbf{G1 Results.} Expected win share is $R^k/(R^k+A^k)$ with $k$ fitted on all team-seasons ($R^2=\kv{pythr2}$). A team passes if it is below expectation in both seasons. \textbf{G2 Cause.} Each team's game is split into 12 cells (discipline $\times$ phase $\times$ pace/spin). The cell value is runs above average per 100 balls (\cref{sec:tools}) for the team minus the other nine; intervals come from a match-cluster bootstrap. A cell must be worse than the league and clear three hurdles: BH $q<0.10$ within the team's grid; a negative team coefficient in a regression of raw runs per ball on season and ground fixed effects with match-clustered errors ($p<0.05$); and a negative value in each season separately. \textbf{G3 Money.} Surplus is squad WAR valued at the league's crore-per-WAR rate minus spend, summed over two seasons.
+
+\subsection{Measuring tools}\label{sec:tools}
+Expected runs per ball come from a ladder M0--M4; M2 is $\mu_i=\mu_0\prod_f\hat\gamma_{f,c_f(i)}$ over over, innings, wickets, bowler type, set-ness, venue and handedness, each multiplier shrunk towards one. Win probability uses a resource curve $R(b,w)=R_0(1-e^{-b/\beta})F(w)$ and $P=r^n/(1+r^n)$ with $n=6$ (W1), against fitted, spline-logistic and GAM alternatives. Runs above average add a wicket term $(d_i-\hat p_i)c_i$ priced from the resource curve, and roll up to WAR via a replacement level and runs per win $=4\bar R/k=\kv{rpw}$. Talent rates are shrunk with $\kappa=\kv{kbowl}$ balls (bowling); WAR is not.
+
+\subsection{Problem B: hypotheses and the decision audit}
+Eight hypotheses were written with falsifiers before testing (\cref{tab:hyp}). The audit follows the franchise in order: the 2023 cells (foresight), the December 2023 auction (kept, released, arrived, by bowling type and price), 2024 outcomes (WAR at any team), the market (the auction pool and every regular middle-overs spinner), and the 2024 season split at match seven. The stake of a cell is (team rate $-$ rest rate) $\times$ balls, divided by runs per win and priced at the league rate.
+
+\section{Results}
+\textbf{Measuring tools.} Boosting is most accurate for expected runs (+\kv{m4gain}\% on Poisson deviance) but M2 alone is well calibrated (slope \kv{m2calib}); it is used downstream (\cref{tab:ladders}). For win probability the three-parameter W1 has the best log-loss (\kv{w1logloss}, against \kv{w4logloss} for the GAM). Squad WAR tracks wins ($r=\kv{warwinsr}$).
+
+\begin{table}[t]
+\centering\footnotesize
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Expected-runs model & Gain \% & Calib. \\
+\midrule
+\elrows
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Win-probability model & AUC & Brier & Log-loss \\
+\midrule
+\wprows
+\bottomrule
+\end{tabular}
+\caption{Model ladders, trained on 2023 and scored on 2024.}
+\label{tab:ladders}
+\end{table}
+
+\textbf{Problem A.} Only \kv{ng1} teams (\kv{g1teamslist}) were below expectation in both seasons; \kv{teamabbr} by \kv{gap2023} and \kv{gap2024} points, though only in \kv{pbothbelow}\% of match bootstraps. One cell clears all three G2 hurdles (\cref{fig:teaser}): \kv{teamabbr}'s middle-overs spin, \kv{cellper100} per 100 balls (95\% CI \kv{celllo} to \kv{cellhi}), BH $q=\kv{cellq}$, \kv{cellground} with ground fixed effects ($p=\kv{cellgroundp}$). \kv{teamabbr} also has the most negative surplus (INR~\kv{surplus} crore). It is the only team passing all three gates (\cref{tab:gates}). At a stricter 5\% FDR no team clears G2 and the fallback (most gates, strongest cell) is unchanged. Spend explains little of net run rate ($r=\kv{spendr}$, $p=\kv{spendp}$).
+
+\begin{table*}[t]
+\centering\footnotesize
+\begin{tabular}{@{}lrrlrrrr@{}}
+\toprule
+Team & Gap 2023 & Gap 2024 & Strongest cell & Per 100 & Hurdles & Surplus (cr) & Gates \\
+\midrule
+\gatesrows
+\bottomrule
+\end{tabular}
+\caption{The three gates for every team. Gaps are actual minus Pythagorean win \%; the cell is each team's most defensible weakness.}
+\label{tab:gates}
+\end{table*}
+
+\textbf{Problem B: diagnosis.} With ground fixed effects the team's overall bowling effect falls from \kv{venuecoefraw} to \kv{venuecoeffe} runs per 100 balls; powerplay and death bowling rank \kv{rankbowlpp} and \kv{rankbowldth} in the league. Middle-overs spin is \kv{midspin} per 100 against expectation versus \kv{leaguespin} for other teams' spinners, and no frontline spinner was above the league median regular (\kv{medreg}). The team won \kv{closeW} of \kv{closeM} close finishes, and clutch does not repeat ($r=\kv{clutchrbat}$ for batters).
+
+\begin{table}[t]
+\centering\footnotesize
+\begin{tabular}{@{}llp{2.6cm}@{}}
+\toprule
+& Hypothesis & Verdict \\
+\midrule
+\hyrows
+\bottomrule
+\end{tabular}
+\caption{Problem B hypotheses, written before testing.}
+\label{tab:hyp}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{c04_money_moves.png}
+\caption{Contract value released, kept and brought in for 2024, by what the player bowls.}
+\label{fig:money}
+\end{figure}
+
+\textbf{Problem B: decision audit.} The gap cost \kv{stakerunsa} runs (\kv{stakewinsa} wins, INR~\kv{stakecra} crore) in 2023 and \kv{stakerunsb} in 2024. The franchise released \kv{releasedspinlist} and put INR~\kv{pacenew} crore of new money into pace and INR~\kv{spinnew} crore into spin (\cref{fig:money}). Arrivals produced \kv{wararrived24} WAR in 2024 against \kv{warreleased24} for those released, at INR~\kv{cpwarrived24} crore per WAR. The December 2023 pool held only \kv{marketpooln} spinners with any 2023 middle-overs evidence; the established ones were retained elsewhere, reachable only by trade. On 2023 evidence alone the best candidate projected only \kv{foremaxwins} wins better than the team's own; in hindsight \kv{besthindplayer} would have saved \kv{besthindruns} runs (\kv{besthindwins} wins). Within 2024 the team went from \kv{elWa} win in \kv{elMa} to \kv{elWb} in \kv{elMb}, with powerplay wickets \kv{elppwktsa}$\to$\kv{elppwktsb}; middle-overs spin economy moved only from \kv{elmidspinecona} to \kv{elmidspineconb}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{c08_early_late.png}
+\caption{2024 league stage: runs above average per 100 balls by phase, first seven games against the last seven.}
+\label{fig:el}
+\end{figure}
+
+\section{Decision}
+\begin{table}[t]
+\centering\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Option & E[wins] & 5\% & 95\% & P$>$0 \% \\
+\midrule
+\oprows
+\bottomrule
+\end{tabular}
+\caption{Simulated wins per season on shrunk projections.}
+\label{tab:options}
+\end{table}
+Recoverable value is smaller than the measured cost because individual estimates are heavily shrunk (\cref{tab:options}): a top-quartile Indian middle-overs spinner adds \kv{optC} wins (\kv{optCp}\% chance positive), up to \kv{histupper} if the gap repeated. We recommend redeploying middle overs to the positive options now and buying one Indian middle-overs spinner on more than one season of evidence, with a bid ceiling of projected WAR at the league rate, and not spending premium or overseas slots on more pace or on ``clutch''. Unused in the analysis: at the 2025 auction the franchise bought two spinners, one of them third on our shortlist.
+
+\section{Limitations}
+Two seasons support direction more than size; G1 is uncertain under resampling; prices for some replacement signings are missing; the audit is descriptive, not causal; and WAR levels depend on the stated replacement and runs-per-win choices.
+
+{\small
+\bibliographystyle{ieeenat_fullname}
+\bibliography{refs}
+}
+\end{document}

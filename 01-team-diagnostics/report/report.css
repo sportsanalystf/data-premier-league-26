@@ -1,0 +1,37 @@
+/* Report styling: quiet, readable, print-friendly. */
+:root {
+  --ink: #14161A; --ink2: #4A5058; --ink3: #878C94;
+  --focus: #C8102E; --league: #1D4E89; --rule: #E6E7E9; --panel: #F6F7F8;
+}
+body { color: var(--ink); font-size: 16px; line-height: 1.62; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+h1, h2, h3 { letter-spacing: -0.01em; }
+h1.title { font-weight: 800; font-size: 2.1rem; }
+.subtitle { color: var(--ink2); }
+h2 { border-bottom: 1px solid var(--rule); padding-bottom: .3rem; margin-top: 2.6rem; }
+a { color: var(--league); }
+.callout { border-radius: 6px; }
+.keynum { font-weight: 700; color: var(--focus); }
+.lede { font-size: 1.12rem; color: var(--ink2); }
+table { font-size: .9rem; }
+.table > :not(caption) > * > * { padding: .35rem .5rem; }
+figcaption, .figure-caption { color: var(--ink2); font-size: .88rem; }
+.verdict-supported { color: #1B9E77; font-weight: 700; }
+.verdict-rejected { color: #C8102E; font-weight: 700; }
+.verdict-open { color: #E8A33D; font-weight: 700; }
+.panel { background: var(--panel); border-left: 4px solid var(--league); padding: .9rem 1.1rem; margin: 1.2rem 0; }
+.panel.focus { border-left-color: var(--focus); }
+details.code-fold > summary { color: var(--ink3); font-size: .85rem; }
+@media (max-width: 600px) { body { font-size: 15px; } }
+
+.dpl-table { width: auto; max-width: 100%; margin: .4rem 0 1.2rem; }
+.dpl-table td, .dpl-table th { white-space: nowrap; }
+.dpl-table td:first-child, .dpl-table th:first-child { white-space: normal; }
+.dpl-table tr.focus-row td { color: var(--focus); font-weight: 700; }
+
+/* Code shown in the appendix: readable, framed, not a wall of text. */
+div.sourceCode { border: 1px solid var(--rule); border-radius: 6px; background: #FAFAFB; }
+pre.sourceCode { font-size: .82rem; line-height: 1.45; max-height: 32rem; overflow: auto; }
+.dpl-table.code-map { width: 100%; }
+.code-map td, .code-map th { white-space: normal !important; vertical-align: top; }
+.code-map td:nth-child(2) { white-space: nowrap !important; }
+.code-map td:nth-child(2) code { font-size: .82rem; white-space: nowrap; word-break: keep-all; overflow-wrap: normal; }
