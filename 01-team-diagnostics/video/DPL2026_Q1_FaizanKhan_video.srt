@@ -1,0 +1,480 @@
+1
+00:00:00,350 --> 00:00:02,777
+Hi, I'm Faizan Khan, and this is my
+
+2
+00:00:02,777 --> 00:00:05,897
+franchise report for the Data Premier League.
+
+3
+00:00:06,177 --> 00:00:09,619
+I'll walk you through the whole project: exploring the
+
+4
+00:00:09,619 --> 00:00:12,997
+data, choosing a team fairly, diagnosing its problem,
+
+5
+00:00:12,997 --> 00:00:16,758
+auditing the franchise's decisions, and what I'd recommend.
+
+6
+00:00:17,458 --> 00:00:19,645
+The brief asks for a report on one
+
+7
+00:00:19,645 --> 00:00:21,703
+team, and it hides two problems.
+
+8
+00:00:21,983 --> 00:00:25,747
+Problem A: which team? If I pick a team I already have a
+
+9
+00:00:25,747 --> 00:00:29,645
+story about, I'll just find that story. So the team has to
+
+10
+00:00:29,645 --> 00:00:33,610
+come out of an analysis that treats all ten sides the same.
+
+11
+00:00:33,890 --> 00:00:36,495
+Problem B: for that team, what's wrong, what
+
+12
+00:00:36,495 --> 00:00:39,159
+did the franchise do about it, and what next?
+
+13
+00:00:39,859 --> 00:00:42,776
+For both, I followed the same six steps, and
+
+14
+00:00:42,776 --> 00:00:46,025
+wrote my hypotheses down before testing anything.
+
+15
+00:00:46,725 --> 00:00:50,560
+This is the problem map. Money buys a squad, the squad
+
+16
+00:00:50,560 --> 00:00:54,253
+plays three phases, phases produce runs, runs become
+
+17
+00:00:54,253 --> 00:00:57,733
+wins, and value per crore feeds the next auction.
+
+18
+00:00:58,013 --> 00:01:01,170
+Every analysis here measures one of these arrows.
+
+19
+00:01:01,870 --> 00:01:05,718
+The data is every ball of 2023 and 2024: almost
+
+20
+00:01:05,718 --> 00:01:10,467
+thirty-five thousand deliveries, plus both auction sheets.
+
+21
+00:01:11,167 --> 00:01:13,621
+Some of it can't be taken at face value.
+
+22
+00:01:13,901 --> 00:01:16,780
+The batter-out flag is true on almost every
+
+23
+00:01:16,780 --> 00:01:19,726
+row, retired hurt was coded as a wicket, and
+
+24
+00:01:19,726 --> 00:01:22,605
+running totals are recorded after the ball.
+
+25
+00:01:22,885 --> 00:01:25,896
+So I rebuilt the match state before each delivery,
+
+26
+00:01:25,896 --> 00:01:29,029
+with a guard that stops any model seeing the future.
+
+27
+00:01:29,729 --> 00:01:32,225
+It's all in R, and one command rebuilds
+
+28
+00:01:32,225 --> 00:01:34,913
+every number and chart from the raw files.
+
+29
+00:01:35,613 --> 00:01:39,069
+Part one: before choosing anyone, I explored the whole league.
+
+30
+00:01:39,769 --> 00:01:42,807
+Scoring rose by about half a run an over in
+
+31
+00:01:42,807 --> 00:01:46,339
+2024, but the shape of an innings stayed the same.
+
+32
+00:01:47,039 --> 00:01:50,389
+The rise wasn't even: the powerplay and the death went up
+
+33
+00:01:50,389 --> 00:01:53,738
+three quarters of a run, the middle overs less than half.
+
+34
+00:01:54,438 --> 00:01:57,731
+The middle overs belong to spin, and even in 2024
+
+35
+00:01:57,731 --> 00:02:01,158
+it was about a run an over cheaper than pace there.
+
+36
+00:02:01,858 --> 00:02:04,728
+Grounds differ by almost two runs an over, so
+
+37
+00:02:04,728 --> 00:02:07,853
+any team comparison has to hold the ground fixed.
+
+38
+00:02:08,553 --> 00:02:12,674
+Ball tracking adds texture: against spin, runs go to midwicket,
+
+39
+00:02:12,674 --> 00:02:16,467
+and the hardest matchup is spin turning away from the bat.
+
+40
+00:02:17,167 --> 00:02:20,332
+Across all twenty team-seasons, the habit
+
+41
+00:02:20,332 --> 00:02:23,342
+most tied to winning was taking wickets
+
+42
+00:02:23,342 --> 00:02:26,661
+in the middle overs, a correlation of 0.69.
+
+43
+00:02:27,361 --> 00:02:30,241
+That gave me four rules for a fair comparison.
+
+44
+00:02:30,521 --> 00:02:32,291
+Compare within each season.
+
+45
+00:02:32,571 --> 00:02:34,150
+Hold the ground fixed.
+
+46
+00:02:34,430 --> 00:02:36,478
+Split by phase and bowler type.
+
+47
+00:02:36,758 --> 00:02:40,150
+And only trust a weakness that shows up in both seasons.
+
+48
+00:02:40,850 --> 00:02:42,440
+Part two: choosing the team,
+
+49
+00:02:42,440 --> 00:02:44,541
+through three gates fixed in advance.
+
+50
+00:02:45,241 --> 00:02:48,986
+Gate one: did the team win fewer games than its runs
+
+51
+00:02:48,986 --> 00:02:53,091
+deserved, in both seasons? Only Bengaluru and Punjab did.
+
+52
+00:02:53,791 --> 00:02:57,333
+Gate two: a cause on the field. I split each team's
+
+53
+00:02:57,333 --> 00:03:00,666
+game into twelve cells, by discipline, phase and
+
+54
+00:03:00,666 --> 00:03:04,069
+bowler type, each measured against the other nine
+
+55
+00:03:04,069 --> 00:03:07,402
+teams with ground and match situation taken out.
+
+56
+00:03:08,102 --> 00:03:11,563
+A cell counts only if it survives a multiple-testing
+
+57
+00:03:11,563 --> 00:03:15,889
+correction, a separate ground test, and shows up in both seasons.
+
+58
+00:03:16,169 --> 00:03:19,257
+Of eighty-three cells, exactly one cleared
+
+59
+00:03:19,257 --> 00:03:22,419
+all three: RCB's middle-overs spin bowling.
+
+60
+00:03:23,119 --> 00:03:26,585
+Gate three is money: RCB's squad cost more than its
+
+61
+00:03:26,585 --> 00:03:30,458
+wins were worth, the most negative surplus in the league.
+
+62
+00:03:31,158 --> 00:03:35,660
+Here's the dashboard's overview. Only RCB passes all three
+
+63
+00:03:35,660 --> 00:03:40,395
+gates; Punjab passes two. So the data chose the team, not me.
+
+64
+00:03:41,095 --> 00:03:44,031
+And RCB isn't a bad team. Their powerplay
+
+65
+00:03:44,031 --> 00:03:47,110
+and death bowling rank first. They have one
+
+66
+00:03:47,110 --> 00:03:50,333
+hole, in exactly the phase that matters most.
+
+67
+00:03:51,033 --> 00:03:54,560
+To measure all this I built four ladders of
+
+68
+00:03:54,560 --> 00:03:58,498
+models, trained on 2023 and tested on 2024. Each
+
+69
+00:03:58,498 --> 00:04:02,190
+time, the simplest well-calibrated model won.
+
+70
+00:04:02,890 --> 00:04:08,007
+Squad wins above replacement, built ball by ball, track actual
+
+71
+00:04:08,007 --> 00:04:12,959
+wins at 0.75, which puts runs, wins and rupees on one scale.
+
+72
+00:04:13,659 --> 00:04:16,578
+Part four: what's wrong with RCB. I wrote
+
+73
+00:04:16,578 --> 00:04:19,569
+eight hypotheses for them, before testing.
+
+74
+00:04:20,269 --> 00:04:23,089
+First, is it the ground? Hold Chinnaswamy
+
+75
+00:04:23,089 --> 00:04:26,391
+fixed, and their overall bowling gap disappears.
+
+76
+00:04:27,091 --> 00:04:30,374
+What's left is spin in overs seven to fifteen: the
+
+77
+00:04:30,374 --> 00:04:33,854
+worst in the league, and just as bad in both seasons.
+
+78
+00:04:34,554 --> 00:04:37,946
+That cost about a hundred and five runs a season, a
+
+79
+00:04:37,946 --> 00:04:41,338
+little over a win, worth around seven crore rupees.
+
+80
+00:04:42,038 --> 00:04:45,295
+Partly it's deployment: the good options got less
+
+81
+00:04:45,295 --> 00:04:48,286
+than a quarter of the overs. But no frontline
+
+82
+00:04:48,286 --> 00:04:51,809
+spinner was even median quality. It's a missing role.
+
+83
+00:04:52,509 --> 00:04:55,943
+They lost all three close finishes, but clutch doesn't
+
+84
+00:04:55,943 --> 00:04:59,314
+repeat from season to season, so I read that as luck.
+
+85
+00:05:00,014 --> 00:05:03,969
+Part five: what did the franchise do about it? I followed their
+
+86
+00:05:03,969 --> 00:05:07,673
+decisions in order, keeping foresight apart from hindsight.
+
+87
+00:05:08,373 --> 00:05:11,284
+Twenty twenty-three, what the data said, the
+
+88
+00:05:11,284 --> 00:05:14,261
+December auction, and the two halves of 2024.
+
+89
+00:05:14,961 --> 00:05:18,201
+At the auction RCB released both main spinners,
+
+90
+00:05:18,201 --> 00:05:21,304
+which was fair. But of the new bowling money,
+
+91
+00:05:21,304 --> 00:05:24,475
+thirty-six crore went on pace and two on spin.
+
+92
+00:05:25,175 --> 00:05:27,370
+Their other weak spots moved between
+
+93
+00:05:27,370 --> 00:05:29,442
+seasons. Middle-overs spin didn't.
+
+94
+00:05:30,142 --> 00:05:33,449
+The arrivals produced more wins, but at almost nine
+
+95
+00:05:33,449 --> 00:05:36,691
+crore per win, against a league rate of about six.
+
+96
+00:05:37,391 --> 00:05:39,936
+There was no proven spinner in the auction;
+
+97
+00:05:39,936 --> 00:05:42,659
+they were all retained elsewhere, so the route
+
+98
+00:05:42,659 --> 00:05:45,263
+was a trade, like the one for Cameron Green.
+
+99
+00:05:45,543 --> 00:05:48,807
+In hindsight, an established spinner in
+
+100
+00:05:48,807 --> 00:05:52,071
+RCB's 2024 overs was worth about a win.
+
+101
+00:05:52,771 --> 00:05:56,750
+And the 2024 turnaround, one win in seven then six in
+
+102
+00:05:56,750 --> 00:06:00,729
+seven, came from the powerplay, not from fixing spin.
+
+103
+00:06:01,429 --> 00:06:04,636
+The limits: two seasons give direction more firmly
+
+104
+00:06:04,636 --> 00:06:07,843
+than size, shrinkage makes projected gains smaller
+
+105
+00:06:07,843 --> 00:06:11,114
+than the measured cost, and the audit isn't causal.
+
+106
+00:06:11,814 --> 00:06:16,311
+One top-quartile Indian spinner is worth about a quarter of
+
+107
+00:06:16,311 --> 00:06:20,732
+a win a season on conservative estimates, up to nearly one
+
+108
+00:06:20,732 --> 00:06:25,382
+if the past repeats. RCB missed the 2023 playoffs by one win.
+
+109
+00:06:26,082 --> 00:06:27,789
+So, three recommendations.
+
+110
+00:06:28,069 --> 00:06:31,567
+Move the middle overs now, to the bowlers already good there.
+
+111
+00:06:31,847 --> 00:06:35,265
+Buy one Indian middle-overs spinner, judged on more
+
+112
+00:06:35,265 --> 00:06:38,951
+than one season, with the bid capped by projected wins.
+
+113
+00:06:39,231 --> 00:06:42,047
+And don't spend big on more pace, or on clutch.
+
+114
+00:06:42,747 --> 00:06:45,869
+Everything is in the repository: three reports,
+
+115
+00:06:45,869 --> 00:06:49,190
+the paper, the slides, the dashboard and the code.
+
+116
+00:06:49,890 --> 00:06:53,202
+One note from outside the data: at the next
+
+117
+00:06:53,202 --> 00:06:56,745
+auction RCB bought two spinners, Krunal Pandya
+
+118
+00:06:56,745 --> 00:06:59,981
+and Suyash Sharma, and won the 2025 title.
+
+119
+00:07:00,261 --> 00:07:03,153
+One result proves nothing on its own, but it's
+
+120
+00:07:03,153 --> 00:07:06,234
+the gap the data pointed to. Thanks for watching.
+
