@@ -1,0 +1,146 @@
+p_match,match_date,year,ground,venue,team1,team2,winner,toss,toss_decision,first_bat,target,inns1_runs,inns2_runs,inns1_wkts,inns2_wkts,no_result
+1359475,2023-03-31,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Chennai Super Kings,Gujarat Titans,Gujarat Titans,Gujarat Titans,field,Chennai Super Kings,179,178,182,7,5,FALSE
+1359476,2023-04-01,2023,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",Mohali,Punjab Kings,Kolkata Knight Riders,Punjab Kings,Kolkata Knight Riders,field,Punjab Kings,192,191,146,5,7,FALSE
+1359477,2023-04-01,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Delhi Capitals,Lucknow Super Giants,Delhi Capitals,field,Lucknow Super Giants,194,193,143,6,9,FALSE
+1359478,2023-04-02,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Rajasthan Royals,Sunrisers Hyderabad,Rajasthan Royals,Sunrisers Hyderabad,field,Rajasthan Royals,204,203,131,5,8,FALSE
+1359479,2023-04-02,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Mumbai Indians,Royal Challengers Bengaluru,Royal Challengers Bengaluru,Royal Challengers Bengaluru,field,Mumbai Indians,172,171,172,7,2,FALSE
+1359480,2023-04-03,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Lucknow Super Giants,Chennai Super Kings,Lucknow Super Giants,field,Chennai Super Kings,218,217,205,7,7,FALSE
+1359481,2023-04-04,2023,"Arun Jaitley Stadium, Delhi",Kotla,Delhi Capitals,Gujarat Titans,Gujarat Titans,Gujarat Titans,field,Delhi Capitals,163,162,163,8,4,FALSE
+1359482,2023-04-05,2023,"Barsapara Cricket Stadium, Guwahati",Guwahati,Punjab Kings,Rajasthan Royals,Punjab Kings,Rajasthan Royals,field,Punjab Kings,198,197,192,4,7,FALSE
+1359483,2023-04-06,2023,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Royal Challengers Bengaluru,Kolkata Knight Riders,Royal Challengers Bengaluru,field,Kolkata Knight Riders,205,204,123,7,10,FALSE
+1359484,2023-04-07,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Sunrisers Hyderabad,Lucknow Super Giants,Lucknow Super Giants,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,122,121,127,8,5,FALSE
+1359485,2023-04-08,2023,"Barsapara Cricket Stadium, Guwahati",Guwahati,Rajasthan Royals,Delhi Capitals,Rajasthan Royals,Delhi Capitals,field,Rajasthan Royals,200,199,142,4,9,FALSE
+1359486,2023-04-08,2023,"Wankhede Stadium, Mumbai",Wankhede,Mumbai Indians,Chennai Super Kings,Chennai Super Kings,Chennai Super Kings,field,Mumbai Indians,158,157,159,8,3,FALSE
+1359487,2023-04-09,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Kolkata Knight Riders,Kolkata Knight Riders,Gujarat Titans,bat,Gujarat Titans,205,204,207,4,7,FALSE
+1359488,2023-04-09,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Punjab Kings,Sunrisers Hyderabad,Sunrisers Hyderabad,Sunrisers Hyderabad,field,Punjab Kings,144,143,145,9,2,FALSE
+1359489,2023-04-10,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Lucknow Super Giants,Lucknow Super Giants,Lucknow Super Giants,field,Royal Challengers Bengaluru,213,212,213,2,9,FALSE
+1359490,2023-04-11,2023,"Arun Jaitley Stadium, Delhi",Kotla,Delhi Capitals,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Delhi Capitals,173,172,173,10,4,FALSE
+1359491,2023-04-12,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Rajasthan Royals,Chennai Super Kings,Rajasthan Royals,Chennai Super Kings,field,Rajasthan Royals,176,175,172,8,6,FALSE
+1359492,2023-04-13,2023,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",Mohali,Punjab Kings,Gujarat Titans,Gujarat Titans,Gujarat Titans,field,Punjab Kings,154,153,154,8,4,FALSE
+1359493,2023-04-14,2023,"Eden Gardens, Kolkata",Eden Gardens,Sunrisers Hyderabad,Kolkata Knight Riders,Sunrisers Hyderabad,Kolkata Knight Riders,field,Sunrisers Hyderabad,229,228,205,4,7,FALSE
+1359494,2023-04-15,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Delhi Capitals,Royal Challengers Bengaluru,Delhi Capitals,field,Royal Challengers Bengaluru,175,174,151,6,9,FALSE
+1359495,2023-04-15,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Punjab Kings,Punjab Kings,Punjab Kings,field,Lucknow Super Giants,160,159,161,8,8,FALSE
+1359496,2023-04-16,2023,"Wankhede Stadium, Mumbai",Wankhede,Kolkata Knight Riders,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Kolkata Knight Riders,186,185,186,6,5,FALSE
+1359497,2023-04-16,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Gujarat Titans,178,177,179,7,7,FALSE
+1359498,2023-04-17,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Chennai Super Kings,Royal Challengers Bengaluru,Chennai Super Kings,Royal Challengers Bengaluru,field,Chennai Super Kings,227,226,218,6,8,FALSE
+1359499,2023-04-18,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Mumbai Indians,Sunrisers Hyderabad,Mumbai Indians,Sunrisers Hyderabad,field,Mumbai Indians,193,192,178,5,10,FALSE
+1359500,2023-04-19,2023,"Sawai Mansingh Stadium, Jaipur",Jaipur,Lucknow Super Giants,Rajasthan Royals,Lucknow Super Giants,Rajasthan Royals,field,Lucknow Super Giants,155,154,144,7,6,FALSE
+1359501,2023-04-20,2023,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",Mohali,Royal Challengers Bengaluru,Punjab Kings,Royal Challengers Bengaluru,Punjab Kings,field,Royal Challengers Bengaluru,175,174,150,4,10,FALSE
+1359502,2023-04-20,2023,"Arun Jaitley Stadium, Delhi",Kotla,Kolkata Knight Riders,Delhi Capitals,Delhi Capitals,Delhi Capitals,field,Kolkata Knight Riders,128,127,128,10,6,FALSE
+1359503,2023-04-21,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Sunrisers Hyderabad,Chennai Super Kings,Chennai Super Kings,Chennai Super Kings,field,Sunrisers Hyderabad,135,134,138,7,3,FALSE
+1359504,2023-04-22,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Gujarat Titans,Lucknow Super Giants,Gujarat Titans,Gujarat Titans,bat,Gujarat Titans,136,135,128,6,7,FALSE
+1359505,2023-04-22,2023,"Wankhede Stadium, Mumbai",Wankhede,Punjab Kings,Mumbai Indians,Punjab Kings,Mumbai Indians,field,Punjab Kings,215,214,201,8,6,FALSE
+1359506,2023-04-23,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Rajasthan Royals,Royal Challengers Bengaluru,Rajasthan Royals,field,Royal Challengers Bengaluru,190,189,182,9,6,FALSE
+1359507,2023-04-23,2023,"Eden Gardens, Kolkata",Eden Gardens,Chennai Super Kings,Kolkata Knight Riders,Chennai Super Kings,Kolkata Knight Riders,field,Chennai Super Kings,236,235,186,4,8,FALSE
+1359508,2023-04-24,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Delhi Capitals,Sunrisers Hyderabad,Delhi Capitals,Delhi Capitals,bat,Delhi Capitals,145,144,137,9,6,FALSE
+1359509,2023-04-25,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Mumbai Indians,Gujarat Titans,Mumbai Indians,field,Gujarat Titans,208,207,152,6,9,FALSE
+1359510,2023-04-26,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Kolkata Knight Riders,Royal Challengers Bengaluru,Kolkata Knight Riders,Royal Challengers Bengaluru,field,Kolkata Knight Riders,201,200,179,5,8,FALSE
+1359511,2023-04-27,2023,"Sawai Mansingh Stadium, Jaipur",Jaipur,Rajasthan Royals,Chennai Super Kings,Rajasthan Royals,Rajasthan Royals,bat,Rajasthan Royals,203,202,170,5,6,FALSE
+1359512,2023-04-28,2023,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",Mohali,Lucknow Super Giants,Punjab Kings,Lucknow Super Giants,Punjab Kings,field,Lucknow Super Giants,258,257,201,5,10,FALSE
+1359513,2023-04-29,2023,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Gujarat Titans,Gujarat Titans,Gujarat Titans,field,Kolkata Knight Riders,180,179,180,7,3,FALSE
+1359514,2023-04-29,2023,"Arun Jaitley Stadium, Delhi",Kotla,Sunrisers Hyderabad,Delhi Capitals,Sunrisers Hyderabad,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,198,197,188,6,6,FALSE
+1359515,2023-04-30,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Punjab Kings,Punjab Kings,Chennai Super Kings,bat,Chennai Super Kings,201,200,201,4,6,FALSE
+1359516,2023-04-30,2023,"Wankhede Stadium, Mumbai",Wankhede,Rajasthan Royals,Mumbai Indians,Mumbai Indians,Rajasthan Royals,bat,Rajasthan Royals,213,212,214,7,4,FALSE
+1359517,2023-05-01,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Royal Challengers Bengaluru,Lucknow Super Giants,Royal Challengers Bengaluru,Royal Challengers Bengaluru,bat,Royal Challengers Bengaluru,127,126,108,9,10,FALSE
+1359518,2023-05-02,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Delhi Capitals,Gujarat Titans,Delhi Capitals,Delhi Capitals,bat,Delhi Capitals,131,130,125,8,6,FALSE
+1359519,2023-05-03,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,NA,-,Chennai Super Kings,field,Lucknow Super Giants,NA,125,0,7,0,TRUE
+1359520,2023-05-03,2023,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",Mohali,Punjab Kings,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Punjab Kings,215,214,216,3,4,FALSE
+1359521,2023-05-04,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Kolkata Knight Riders,Sunrisers Hyderabad,Kolkata Knight Riders,Kolkata Knight Riders,bat,Kolkata Knight Riders,172,171,166,9,8,FALSE
+1359522,2023-05-05,2023,"Sawai Mansingh Stadium, Jaipur",Jaipur,Rajasthan Royals,Gujarat Titans,Gujarat Titans,Rajasthan Royals,bat,Rajasthan Royals,119,118,119,10,1,FALSE
+1359523,2023-05-06,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Mumbai Indians,Chennai Super Kings,Chennai Super Kings,Chennai Super Kings,field,Mumbai Indians,140,139,140,8,4,FALSE
+1359524,2023-05-06,2023,"Arun Jaitley Stadium, Delhi",Kotla,Royal Challengers Bengaluru,Delhi Capitals,Delhi Capitals,Royal Challengers Bengaluru,bat,Royal Challengers Bengaluru,182,181,187,4,3,FALSE
+1359525,2023-05-07,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Lucknow Super Giants,Gujarat Titans,Lucknow Super Giants,field,Gujarat Titans,228,227,171,2,7,FALSE
+1359526,2023-05-07,2023,"Sawai Mansingh Stadium, Jaipur",Jaipur,Rajasthan Royals,Sunrisers Hyderabad,Sunrisers Hyderabad,Rajasthan Royals,bat,Rajasthan Royals,215,214,217,2,6,FALSE
+1359527,2023-05-08,2023,"Eden Gardens, Kolkata",Eden Gardens,Punjab Kings,Kolkata Knight Riders,Kolkata Knight Riders,Punjab Kings,bat,Punjab Kings,180,179,182,7,5,FALSE
+1359528,2023-05-09,2023,"Wankhede Stadium, Mumbai",Wankhede,Royal Challengers Bengaluru,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Royal Challengers Bengaluru,200,199,200,6,4,FALSE
+1359529,2023-05-10,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Delhi Capitals,Chennai Super Kings,Chennai Super Kings,bat,Chennai Super Kings,168,167,140,8,8,FALSE
+1359530,2023-05-11,2023,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Kolkata Knight Riders,150,149,151,8,1,FALSE
+1359531,2023-05-12,2023,"Wankhede Stadium, Mumbai",Wankhede,Mumbai Indians,Gujarat Titans,Mumbai Indians,Gujarat Titans,field,Mumbai Indians,219,218,191,5,8,FALSE
+1359532,2023-05-13,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Sunrisers Hyderabad,Lucknow Super Giants,Lucknow Super Giants,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,183,182,185,6,3,FALSE
+1359533,2023-05-13,2023,"Arun Jaitley Stadium, Delhi",Kotla,Punjab Kings,Delhi Capitals,Punjab Kings,Delhi Capitals,field,Punjab Kings,168,167,136,7,8,FALSE
+1359534,2023-05-14,2023,"Sawai Mansingh Stadium, Jaipur",Jaipur,Royal Challengers Bengaluru,Rajasthan Royals,Royal Challengers Bengaluru,Royal Challengers Bengaluru,bat,Royal Challengers Bengaluru,172,171,59,5,10,FALSE
+1359535,2023-05-14,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Kolkata Knight Riders,Kolkata Knight Riders,Chennai Super Kings,bat,Chennai Super Kings,145,144,147,6,4,FALSE
+1359536,2023-05-15,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Sunrisers Hyderabad,Gujarat Titans,Sunrisers Hyderabad,field,Gujarat Titans,189,188,154,9,9,FALSE
+1359537,2023-05-16,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Mumbai Indians,Lucknow Super Giants,Mumbai Indians,field,Lucknow Super Giants,178,177,172,3,5,FALSE
+1359538,2023-05-17,2023,"Himachal Pradesh Cricket Association Stadium, Dharamsala",Dharamsala,Delhi Capitals,Punjab Kings,Delhi Capitals,Punjab Kings,field,Delhi Capitals,214,213,198,2,8,FALSE
+1359539,2023-05-18,2023,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Sunrisers Hyderabad,Royal Challengers Bengaluru,Royal Challengers Bengaluru,Royal Challengers Bengaluru,field,Sunrisers Hyderabad,187,186,187,5,2,FALSE
+1359540,2023-05-19,2023,"Himachal Pradesh Cricket Association Stadium, Dharamsala",Dharamsala,Punjab Kings,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Punjab Kings,188,187,189,5,6,FALSE
+1359541,2023-05-20,2023,"Arun Jaitley Stadium, Delhi",Kotla,Chennai Super Kings,Delhi Capitals,Chennai Super Kings,Chennai Super Kings,bat,Chennai Super Kings,224,223,146,3,9,FALSE
+1359542,2023-05-20,2023,"Eden Gardens, Kolkata",Eden Gardens,Lucknow Super Giants,Kolkata Knight Riders,Lucknow Super Giants,Kolkata Knight Riders,field,Lucknow Super Giants,177,176,175,8,7,FALSE
+1359543,2023-05-21,2023,"Wankhede Stadium, Mumbai",Wankhede,Sunrisers Hyderabad,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Sunrisers Hyderabad,201,200,201,5,2,FALSE
+1359544,2023-05-21,2023,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Gujarat Titans,Gujarat Titans,Gujarat Titans,field,Royal Challengers Bengaluru,198,197,198,5,4,FALSE
+1370350,2023-05-23,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Gujarat Titans,Chennai Super Kings,Gujarat Titans,field,Chennai Super Kings,173,172,157,7,10,FALSE
+1370351,2023-05-24,2023,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Mumbai Indians,Lucknow Super Giants,Mumbai Indians,Mumbai Indians,bat,Mumbai Indians,183,182,101,8,10,FALSE
+1370352,2023-05-26,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Mumbai Indians,Gujarat Titans,Mumbai Indians,field,Gujarat Titans,234,233,171,3,10,FALSE
+1370353,2023-05-28,2023,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Chennai Super Kings,Chennai Super Kings,Chennai Super Kings,field,Gujarat Titans,171,214,171,4,5,FALSE
+1422119,2024-03-22,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Royal Challengers Bengaluru,Chennai Super Kings,Chennai Super Kings,Royal Challengers Bengaluru,bat,Royal Challengers Bengaluru,174,173,176,6,4,FALSE
+1422120,2024-03-23,2024,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur",Mullanpur,Delhi Capitals,Punjab Kings,Punjab Kings,Punjab Kings,field,Delhi Capitals,175,174,177,9,6,FALSE
+1422121,2024-03-23,2024,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Sunrisers Hyderabad,Kolkata Knight Riders,Sunrisers Hyderabad,field,Kolkata Knight Riders,209,208,204,7,7,FALSE
+1422122,2024-03-24,2024,"Sawai Mansingh Stadium, Jaipur",Jaipur,Rajasthan Royals,Lucknow Super Giants,Rajasthan Royals,Rajasthan Royals,bat,Rajasthan Royals,194,193,173,4,6,FALSE
+1422123,2024-03-24,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Mumbai Indians,Gujarat Titans,Mumbai Indians,field,Gujarat Titans,169,168,162,6,9,FALSE
+1422124,2024-03-25,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Punjab Kings,Royal Challengers Bengaluru,Royal Challengers Bengaluru,Royal Challengers Bengaluru,field,Punjab Kings,177,176,178,6,6,FALSE
+1422125,2024-03-26,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Gujarat Titans,Chennai Super Kings,Gujarat Titans,field,Chennai Super Kings,207,206,143,6,8,FALSE
+1422126,2024-03-27,2024,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Sunrisers Hyderabad,Mumbai Indians,Sunrisers Hyderabad,Mumbai Indians,field,Sunrisers Hyderabad,278,277,246,3,5,FALSE
+1422127,2024-03-28,2024,"Sawai Mansingh Stadium, Jaipur",Jaipur,Rajasthan Royals,Delhi Capitals,Rajasthan Royals,Delhi Capitals,field,Rajasthan Royals,186,185,173,5,5,FALSE
+1422128,2024-03-29,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Kolkata Knight Riders,Kolkata Knight Riders,Kolkata Knight Riders,field,Royal Challengers Bengaluru,183,182,186,6,3,FALSE
+1422129,2024-03-30,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Punjab Kings,Lucknow Super Giants,Lucknow Super Giants,bat,Lucknow Super Giants,200,199,178,8,5,FALSE
+1422130,2024-03-31,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Sunrisers Hyderabad,Gujarat Titans,Gujarat Titans,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,163,162,168,8,3,FALSE
+1422131,2024-03-31,2024,"Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",Vizag,Delhi Capitals,Chennai Super Kings,Delhi Capitals,Delhi Capitals,bat,Delhi Capitals,192,191,171,5,6,FALSE
+1422132,2024-04-01,2024,"Wankhede Stadium, Mumbai",Wankhede,Mumbai Indians,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Mumbai Indians,126,125,127,9,4,FALSE
+1422133,2024-04-02,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Lucknow Super Giants,Royal Challengers Bengaluru,Lucknow Super Giants,Royal Challengers Bengaluru,field,Lucknow Super Giants,182,181,153,5,10,FALSE
+1422134,2024-04-03,2024,"Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",Vizag,Kolkata Knight Riders,Delhi Capitals,Kolkata Knight Riders,Kolkata Knight Riders,bat,Kolkata Knight Riders,273,272,166,7,10,FALSE
+1422135,2024-04-04,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Punjab Kings,Punjab Kings,Punjab Kings,field,Gujarat Titans,200,199,200,4,7,FALSE
+1422136,2024-04-05,2024,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Chennai Super Kings,Sunrisers Hyderabad,Sunrisers Hyderabad,Sunrisers Hyderabad,field,Chennai Super Kings,166,165,166,5,4,FALSE
+1422137,2024-04-06,2024,"Sawai Mansingh Stadium, Jaipur",Jaipur,Royal Challengers Bengaluru,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Royal Challengers Bengaluru,184,183,189,3,4,FALSE
+1422138,2024-04-07,2024,"Wankhede Stadium, Mumbai",Wankhede,Mumbai Indians,Delhi Capitals,Mumbai Indians,Delhi Capitals,field,Mumbai Indians,235,234,205,5,8,FALSE
+1422139,2024-04-07,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Gujarat Titans,Lucknow Super Giants,Lucknow Super Giants,bat,Lucknow Super Giants,164,163,130,5,10,FALSE
+1426260,2024-04-08,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Kolkata Knight Riders,Chennai Super Kings,Chennai Super Kings,Chennai Super Kings,field,Kolkata Knight Riders,138,137,141,9,3,FALSE
+1426261,2024-04-09,2024,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur",Mullanpur,Sunrisers Hyderabad,Punjab Kings,Sunrisers Hyderabad,Punjab Kings,field,Sunrisers Hyderabad,183,182,180,9,6,FALSE
+1426262,2024-04-10,2024,"Sawai Mansingh Stadium, Jaipur",Jaipur,Rajasthan Royals,Gujarat Titans,Gujarat Titans,Gujarat Titans,field,Rajasthan Royals,197,196,199,3,7,FALSE
+1426263,2024-04-11,2024,"Wankhede Stadium, Mumbai",Wankhede,Royal Challengers Bengaluru,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Royal Challengers Bengaluru,197,196,199,8,3,FALSE
+1426264,2024-04-12,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Delhi Capitals,Delhi Capitals,Lucknow Super Giants,bat,Lucknow Super Giants,168,167,170,7,4,FALSE
+1426265,2024-04-13,2024,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur",Mullanpur,Punjab Kings,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Punjab Kings,148,147,152,8,7,FALSE
+1426266,2024-04-14,2024,"Eden Gardens, Kolkata",Eden Gardens,Lucknow Super Giants,Kolkata Knight Riders,Kolkata Knight Riders,Kolkata Knight Riders,field,Lucknow Super Giants,162,161,162,7,2,FALSE
+1426267,2024-04-14,2024,"Wankhede Stadium, Mumbai",Wankhede,Chennai Super Kings,Mumbai Indians,Chennai Super Kings,Mumbai Indians,field,Chennai Super Kings,207,206,186,4,6,FALSE
+1426268,2024-04-15,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Sunrisers Hyderabad,Royal Challengers Bengaluru,Sunrisers Hyderabad,Royal Challengers Bengaluru,field,Sunrisers Hyderabad,288,287,262,3,7,FALSE
+1426269,2024-04-16,2024,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Kolkata Knight Riders,224,223,224,6,8,FALSE
+1426270,2024-04-17,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Delhi Capitals,Delhi Capitals,Delhi Capitals,field,Gujarat Titans,90,89,92,10,4,FALSE
+1426271,2024-04-18,2024,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur",Mullanpur,Mumbai Indians,Punjab Kings,Mumbai Indians,Punjab Kings,field,Mumbai Indians,193,192,183,7,10,FALSE
+1426272,2024-04-19,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Chennai Super Kings,Lucknow Super Giants,Lucknow Super Giants,Lucknow Super Giants,field,Chennai Super Kings,177,176,180,6,2,FALSE
+1426273,2024-04-20,2024,"Arun Jaitley Stadium, Delhi",Kotla,Sunrisers Hyderabad,Delhi Capitals,Sunrisers Hyderabad,Delhi Capitals,field,Sunrisers Hyderabad,267,266,199,7,10,FALSE
+1426274,2024-04-21,2024,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Royal Challengers Bengaluru,Kolkata Knight Riders,Royal Challengers Bengaluru,field,Kolkata Knight Riders,223,222,221,6,10,FALSE
+1426275,2024-04-21,2024,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur",Mullanpur,Punjab Kings,Gujarat Titans,Gujarat Titans,Punjab Kings,bat,Punjab Kings,143,142,146,10,7,FALSE
+1426276,2024-04-22,2024,"Sawai Mansingh Stadium, Jaipur",Jaipur,Mumbai Indians,Rajasthan Royals,Rajasthan Royals,Mumbai Indians,bat,Mumbai Indians,180,179,183,9,1,FALSE
+1426277,2024-04-23,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Lucknow Super Giants,Lucknow Super Giants,Lucknow Super Giants,field,Chennai Super Kings,211,210,213,4,4,FALSE
+1426278,2024-04-24,2024,"Arun Jaitley Stadium, Delhi",Kotla,Delhi Capitals,Gujarat Titans,Delhi Capitals,Gujarat Titans,field,Delhi Capitals,225,224,220,4,8,FALSE
+1426279,2024-04-25,2024,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Royal Challengers Bengaluru,Sunrisers Hyderabad,Royal Challengers Bengaluru,Royal Challengers Bengaluru,bat,Royal Challengers Bengaluru,207,206,171,7,8,FALSE
+1426280,2024-04-26,2024,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Punjab Kings,Punjab Kings,Punjab Kings,field,Kolkata Knight Riders,262,261,262,6,2,FALSE
+1426281,2024-04-27,2024,"Arun Jaitley Stadium, Delhi",Kotla,Delhi Capitals,Mumbai Indians,Delhi Capitals,Mumbai Indians,field,Delhi Capitals,258,257,247,4,9,FALSE
+1426282,2024-04-27,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Lucknow Super Giants,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Lucknow Super Giants,197,196,199,5,3,FALSE
+1426283,2024-04-28,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Royal Challengers Bengaluru,Royal Challengers Bengaluru,Royal Challengers Bengaluru,field,Gujarat Titans,201,200,206,3,1,FALSE
+1426284,2024-04-28,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Sunrisers Hyderabad,Chennai Super Kings,Sunrisers Hyderabad,field,Chennai Super Kings,213,212,134,3,10,FALSE
+1426285,2024-04-29,2024,"Eden Gardens, Kolkata",Eden Gardens,Delhi Capitals,Kolkata Knight Riders,Kolkata Knight Riders,Delhi Capitals,bat,Delhi Capitals,154,153,157,9,3,FALSE
+1426286,2024-04-30,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Mumbai Indians,Lucknow Super Giants,Lucknow Super Giants,Lucknow Super Giants,field,Mumbai Indians,145,144,145,7,6,FALSE
+1426287,2024-05-01,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Chennai Super Kings,Punjab Kings,Punjab Kings,Punjab Kings,field,Chennai Super Kings,163,162,163,7,3,FALSE
+1426288,2024-05-02,2024,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Sunrisers Hyderabad,Rajasthan Royals,Sunrisers Hyderabad,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,202,201,200,3,7,FALSE
+1426289,2024-05-03,2024,"Wankhede Stadium, Mumbai",Wankhede,Kolkata Knight Riders,Mumbai Indians,Kolkata Knight Riders,Mumbai Indians,field,Kolkata Knight Riders,170,169,145,10,10,FALSE
+1426290,2024-05-04,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Gujarat Titans,Royal Challengers Bengaluru,Royal Challengers Bengaluru,Royal Challengers Bengaluru,field,Gujarat Titans,148,147,152,10,6,FALSE
+1426291,2024-05-05,2024,"Himachal Pradesh Cricket Association Stadium, Dharamsala",Dharamsala,Chennai Super Kings,Punjab Kings,Chennai Super Kings,Punjab Kings,field,Chennai Super Kings,168,167,139,9,9,FALSE
+1426292,2024-05-05,2024,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",Ekana,Kolkata Knight Riders,Lucknow Super Giants,Kolkata Knight Riders,Lucknow Super Giants,field,Kolkata Knight Riders,236,235,137,6,10,FALSE
+1426293,2024-05-06,2024,"Wankhede Stadium, Mumbai",Wankhede,Sunrisers Hyderabad,Mumbai Indians,Mumbai Indians,Mumbai Indians,field,Sunrisers Hyderabad,174,173,174,8,3,FALSE
+1426294,2024-05-07,2024,"Arun Jaitley Stadium, Delhi",Kotla,Delhi Capitals,Rajasthan Royals,Delhi Capitals,Rajasthan Royals,field,Delhi Capitals,222,221,201,8,8,FALSE
+1426295,2024-05-08,2024,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Lucknow Super Giants,Sunrisers Hyderabad,Sunrisers Hyderabad,Lucknow Super Giants,bat,Lucknow Super Giants,166,165,167,4,0,FALSE
+1426296,2024-05-09,2024,"Himachal Pradesh Cricket Association Stadium, Dharamsala",Dharamsala,Royal Challengers Bengaluru,Punjab Kings,Royal Challengers Bengaluru,Punjab Kings,field,Royal Challengers Bengaluru,242,241,181,7,10,FALSE
+1426297,2024-05-10,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Gujarat Titans,Chennai Super Kings,Gujarat Titans,Chennai Super Kings,field,Gujarat Titans,232,231,196,3,8,FALSE
+1426298,2024-05-11,2024,"Eden Gardens, Kolkata",Eden Gardens,Kolkata Knight Riders,Mumbai Indians,Kolkata Knight Riders,Mumbai Indians,field,Kolkata Knight Riders,159,157,139,7,8,FALSE
+1426299,2024-05-12,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Rajasthan Royals,Chennai Super Kings,Chennai Super Kings,Rajasthan Royals,bat,Rajasthan Royals,142,141,145,5,5,FALSE
+1426300,2024-05-12,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Delhi Capitals,Royal Challengers Bengaluru,Delhi Capitals,field,Royal Challengers Bengaluru,188,187,140,9,10,FALSE
+1426302,2024-05-14,2024,"Arun Jaitley Stadium, Delhi",Kotla,Delhi Capitals,Lucknow Super Giants,Delhi Capitals,Lucknow Super Giants,field,Delhi Capitals,209,208,189,4,9,FALSE
+1426303,2024-05-15,2024,"Barsapara Cricket Stadium, Guwahati",Guwahati,Rajasthan Royals,Punjab Kings,Punjab Kings,Rajasthan Royals,bat,Rajasthan Royals,145,144,145,9,5,FALSE
+1426305,2024-05-17,2024,"Wankhede Stadium, Mumbai",Wankhede,Lucknow Super Giants,Mumbai Indians,Lucknow Super Giants,Mumbai Indians,field,Lucknow Super Giants,215,214,196,6,6,FALSE
+1426306,2024-05-18,2024,"M Chinnaswamy Stadium, Bengaluru",Chinnaswamy,Royal Challengers Bengaluru,Chennai Super Kings,Royal Challengers Bengaluru,Chennai Super Kings,field,Royal Challengers Bengaluru,219,218,191,5,7,FALSE
+1426307,2024-05-19,2024,"Rajiv Gandhi International Stadium, Uppal, Hyderabad",Uppal,Punjab Kings,Sunrisers Hyderabad,Sunrisers Hyderabad,Punjab Kings,bat,Punjab Kings,215,214,215,5,6,FALSE
+1426309,2024-05-21,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Sunrisers Hyderabad,Kolkata Knight Riders,Kolkata Knight Riders,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,160,159,164,10,2,FALSE
+1426310,2024-05-22,2024,"Narendra Modi Stadium, Ahmedabad",Ahmedabad,Royal Challengers Bengaluru,Rajasthan Royals,Rajasthan Royals,Rajasthan Royals,field,Royal Challengers Bengaluru,173,172,174,8,6,FALSE
+1426311,2024-05-24,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Sunrisers Hyderabad,Rajasthan Royals,Sunrisers Hyderabad,Rajasthan Royals,field,Sunrisers Hyderabad,176,175,139,9,7,FALSE
+1426312,2024-05-26,2024,"MA Chidambaram Stadium, Chepauk, Chennai",Chepauk,Sunrisers Hyderabad,Kolkata Knight Riders,Kolkata Knight Riders,Sunrisers Hyderabad,bat,Sunrisers Hyderabad,114,113,114,10,2,FALSE
